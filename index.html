@@ -201,8 +201,28 @@
       // ---------- Input ----------
       const keys = {};
       const press = (k,v)=>{ keys[k]=v; };
-      document.addEventListener('keydown', e=>press(e.code,true));
-      document.addEventListener('keyup', e=>press(e.code,false));
+
+      // Block page scrolling while playing; allow typing in the initials input
+      document.addEventListener('keydown', e => {
+        const blockKeys = [
+          'ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
+          'Space','KeyW','KeyA','KeyS','KeyD'
+        ];
+        const isTyping = (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'));
+        if (blockKeys.includes(e.code) && !isTyping) {
+          e.preventDefault();
+        }
+        // pause toggle on Space (unless typing)
+        if (e.code === 'Space' && !isTyping) {
+          // handled in pause listener, but we also set key state for consistency
+        }
+        keys[e.code] = true;
+      });
+
+      document.addEventListener('keyup', e => {
+        keys[e.code] = false;
+      });
+
       document.querySelectorAll('[data-k]').forEach(b=>{
         const k=b.dataset.k;
         b.addEventListener('pointerdown', ()=>press(k,true));
@@ -242,7 +262,6 @@
       let players = +playersSel.value; // 1 or 2
       playersSel.addEventListener('change', ()=>{
         players = +playersSel.value;
-        // Dim / enable P2 on-screen D-pad
         dpadP2.classList.toggle('dim', players===1);
         updateHud();
       });
@@ -601,13 +620,14 @@
       playAgain.addEventListener('click', start);
       saveScoreBtn.addEventListener('click', ()=>{ saveLeaderboard(); initialsInput.value=''; });
 
+      // Space toggles pause (but not when typing in initials)
       document.addEventListener('keydown', e=>{
-        if(e.code === 'Space'){ e.preventDefault(); pause(); }
+        const isTyping = (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'));
+        if(e.code === 'Space' && !isTyping){ e.preventDefault(); pause(); }
       });
 
       // Boot
-      // Dim P2 controls if 1P at load
-      dpadP2.classList.toggle('dim', players===1);
+      dpadP2.classList.toggle('dim', +playersSel.value===1);
       applyDifficulty();
       reset(); requestAnimationFrame(loop);
 
