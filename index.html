@@ -2,200 +2,111 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Dylan & Marianne Mobley's Honeymoon Fund</title>
   <style>
     :root{
-      /* Color system */
       --pink:#e75480; --bg1:#ffe5b4; --bg2:#ffecd2; --ink:#333;
       --card:#fff7ef; --accent:#3a8f5b; --inkmuted:#5d5d5d;
       --joyBase: rgba(0,0,0,.25); --joyKnob:#ffffff; --joyRing: rgba(255,255,255,.6);
-
-      /* Responsive type scale */
       --fs-base: clamp(14px, 2.6vw, 18px);
       --fs-small: clamp(12px, 2.2vw, 16px);
       --fs-h1: clamp(22px, 6vw, 34px);
       --fs-h2: clamp(16px, 4.6vw, 22px);
       --fs-hud: clamp(12px, 2.6vw, 16px);
       --fs-button: clamp(14px, 2.8vw, 18px);
-
-      /* Touch targets / spacing */
       --pad: clamp(10px, 3vw, 18px);
       --radius: 14px;
-
-      /* Joystick sizes (adjusted in media queries) */
-      --joyBaseSize: 100px;
-      --joyKnobSize: 56px;
-      --joyPadInset: 12px;
-
-      /* Canvas max width */
+      --joyBaseSize: 100px; --joyKnobSize: 56px; --joyPadInset: 12px;
       --frame-max: 560px;
     }
-
-    /* Respect reduced motion */
     @media (prefers-reduced-motion: reduce){
-      * { animation: none !important; transition: none !important; }
-      .button, .ctrl, .joyKnob, .joyBase { box-shadow:none !important; }
+      *{animation:none!important;transition:none!important}
+      .button,.ctrl,.joyKnob,.joyBase{box-shadow:none!important}
     }
-
     body{
-      background: linear-gradient(to bottom right, var(--bg1), var(--bg2));
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      text-align:center;
-      padding: calc(var(--pad) + env(safe-area-inset-top)) var(--pad) calc(var(--pad) + env(safe-area-inset-bottom));
-      color:var(--ink);
-      margin:0;
-      font-size: var(--fs-base);
-      -webkit-tap-highlight-color: transparent;
+      background:linear-gradient(to bottom right,var(--bg1),var(--bg2));
+      font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+      text-align:center; padding:calc(var(--pad) + env(safe-area-inset-top)) var(--pad) calc(var(--pad) + env(safe-area-inset-bottom));
+      color:var(--ink); margin:0; font-size:var(--fs-base); -webkit-tap-highlight-color:transparent;
     }
-    h1{ color:var(--pink); margin:.25rem 0 .75rem; font-size: var(--fs-h1); line-height:1.2; }
-    h2{ font-size: var(--fs-h2); }
-    p{ line-height:1.6; margin:.5rem auto; max-width:44rem; }
-
+    h1{color:var(--pink);margin:.25rem 0 .75rem;font-size:var(--fs-h1);line-height:1.2}
+    h2{font-size:var(--fs-h2)} p{line-height:1.6;margin:.5rem auto;max-width:44rem}
     a.button{
-      display:inline-block; margin-top:0.75rem; padding: .9rem 1.25rem;
-      font-size: var(--fs-button); color:#fff; background:var(--pink);
-      border-radius:10px; text-decoration:none; font-weight:700;
-      transition:filter .2s ease; box-shadow:0 6px 16px rgba(231,84,128,.25);
-      min-height: 44px;
+      display:inline-block;margin-top:.75rem;padding:.9rem 1.25rem;font-size:var(--fs-button);
+      color:#fff;background:var(--pink);border-radius:10px;text-decoration:none;font-weight:700;
+      transition:filter .2s ease; box-shadow:0 6px 16px rgba(231,84,128,.25); min-height:44px;
     }
-    a.button:hover{ filter:brightness(.95) }
-
-    .game-card{
-      margin:1.75rem auto 0; max-width:44rem; background:var(--card);
-      border:2px solid rgba(0,0,0,.06); border-radius:var(--radius);
-      padding: var(--pad); box-shadow:0 8px 24px rgba(0,0,0,.06);
-    }
-    .flex-row{ display:flex; justify-content:center; align-items:center; gap:.5rem; flex-wrap:wrap; }
-    .game-head{ font-weight:700; margin:.35rem 0 .25rem; color:#6b4423; }
-    .game-sub{ font-size:var(--fs-small); color:#6b4423; margin:.25rem 0 .35rem; }
-    .hud{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: var(--fs-hud); margin:.45rem 0; color:#444;
-    }
+    a.button:hover{filter:brightness(.95)}
+    .game-card{margin:1.75rem auto 0;max-width:44rem;background:var(--card);border:2px solid rgba(0,0,0,.06);border-radius:var(--radius);padding:var(--pad);box-shadow:0 8px 24px rgba(0,0,0,.06)}
+    .flex-row{display:flex;justify-content:center;align-items:center;gap:.5rem;flex-wrap:wrap}
+    .game-head{font-weight:700;margin:.35rem 0 .25rem;color:#6b4423}
+    .game-sub{font-size:var(--fs-small);color:#6b4423;margin:.25rem 0 .35rem}
+    .hud{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:var(--fs-hud);margin:.45rem 0;color:#444}
 
     .frame{
-      width:min(96vw, var(--frame-max));
-      /* we keep CSS aspect flexible; JS sets canvas pixels to 16:9 or 4:3 to avoid distortion */
-      margin:.5rem auto 0;
-      image-rendering: pixelated; image-rendering: crisp-edges;
-      border:6px solid #2b2420; border-radius:10px; background:#9fd8ff;
-      box-shadow:inset 0 0 0 3px #fff; position:relative; overflow:hidden;
-      touch-action:none;
+      width:min(96vw,var(--frame-max)); margin:.5rem auto 0; image-rendering:pixelated; image-rendering:crisp-edges;
+      border:6px solid #2b2420;border-radius:10px;background:#9fd8ff; box-shadow:inset 0 0 0 3px #fff; position:relative; overflow:hidden; touch-action:none;
     }
-    canvas{ width:100%; height:auto; display:block; }
+    canvas{width:100%;height:auto;display:block}
 
-    .controls{
-      display:flex; align-items:center; justify-content:center; gap:.5rem; margin-top:.6rem; flex-wrap:wrap;
-    }
+    .controls{display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:.6rem;flex-wrap:wrap}
     button.ctrl{
-      background:#fff; border:2px solid #222; color:#222; border-radius:10px;
-      padding:.55rem .85rem; font-weight:700; min-width:3rem; min-height:44px;
-      box-shadow:0 4px 0 #222; transform:translateY(0); transition:transform .05s;
-      touch-action:manipulation; cursor:pointer; font-size: var(--fs-button);
+      background:#fff;border:2px solid #222;color:#222;border-radius:10px;padding:.55rem .85rem;font-weight:700;
+      min-width:3rem;min-height:44px;box-shadow:0 4px 0 #222;transform:translateY(0);transition:transform .05s;touch-action:manipulation;cursor:pointer;font-size:var(--fs-button)
     }
-    button.ctrl:active{ transform:translateY(2px); box-shadow:0 2px 0 #222; }
+    button.ctrl:active{transform:translateY(2px);box-shadow:0 2px 0 #222}
 
-    .dpad{
-      display:grid; grid-template-columns:repeat(3, 42px); grid-template-rows:repeat(3, 42px);
-      gap:6px; margin:.25rem .5rem 0;
-    }
-    .dpad .sp{ visibility:hidden }
+    .dpad{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(3,42px);gap:6px;margin:.25rem .5rem 0}
+    .dpad .sp{visibility:hidden}
+    @media (max-width:768px){ .dpad{display:none!important} }
 
-    /* Auto-hide DPADs on phones */
-    @media (max-width: 768px){
-      .dpad { display:none !important; }
-    }
+    .pill{background:var(--accent);color:#fff;padding:.25rem .6rem;border-radius:999px;font-size:var(--fs-small)}
+    .mute{background:#ffdfe9;border:2px solid #e09;color:#c0175b}
+    .sel{background:#fff;border:1px solid #ccc;border-radius:8px;padding:.35rem .6rem;font-size:var(--fs-small);min-height:40px}
 
-    .pill{ background:var(--accent); color:#fff; padding:.25rem .6rem; border-radius:999px; font-size:var(--fs-small); }
-    .mute{ background:#ffdfe9; border:2px solid #e09; color:#c0175b; }
-    .sel{
-      background:#fff; border:1px solid #ccc; border-radius:8px;
-      padding:.35rem .6rem; font-size:var(--fs-small); min-height:40px;
-    }
+    .leaderboard{margin-top:.85rem;text-align:left;max-width:44rem;margin-left:auto;margin-right:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:var(--fs-small);color:#333;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:.75rem 1rem}
+    .leaderboard h3{margin:.25rem 0 .5rem;color:#6b4423;font-size:clamp(14px,3.4vw,18px)}
+    .lb-row{display:flex;justify-content:space-between;padding:.25rem 0;border-bottom:1px dashed rgba(0,0,0,.08)}
+    .lb-row:last-child{border-bottom:none}
 
-    .leaderboard{
-      margin-top:.85rem; text-align:left; max-width:44rem; margin-left:auto; margin-right:auto;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: var(--fs-small); color:#333; background:#fff;
-      border:1px solid rgba(0,0,0,.08); border-radius:10px; padding:.75rem 1rem;
-    }
-    .leaderboard h3{ margin:.25rem 0 .5rem; color:#6b4423; font-size: clamp(14px, 3.4vw, 18px); }
-    .lb-row{ display:flex; justify-content:space-between; padding:.25rem 0; border-bottom:1px dashed rgba(0,0,0,.08); }
-    .lb-row:last-child{ border-bottom:none; }
-
-    /* Overlays */
+    /* Overlays above all touch UI */
     .overlay{
       position:absolute; inset:0; display:none; align-items:center; justify-content:center;
-      background:rgba(0,0,0,.55); color:#fff; text-align:center; padding:1rem;
+      background:rgba(0,0,0,.55); color:#fff; text-align:center; padding:1rem; z-index:5; /* <-- raised */
     }
-    .overlay.show{ display:flex; }
+    .overlay.show{display:flex}
     .overlay .panel{
       background:rgba(255,255,255,.96); color:#222; padding:1rem 1.25rem;
-      border-radius:12px; max-width:min(94vw, 520px); box-shadow:0 10px 30px rgba(0,0,0,.25);
+      border-radius:12px; max-width:min(94vw,520px); box-shadow:0 10px 30px rgba(0,0,0,.25)
     }
-    .panel h3{ margin:.25rem 0; color:#5b2a16; font-size: clamp(18px, 5.2vw, 22px); }
-    .panel p{ margin:.25rem 0 .75rem; font-size: var(--fs-small); }
-    .panel ul{ margin:.25rem 0 .75rem; padding-left:1.2rem; text-align:left; font-size: var(--fs-small); }
-    .panel li{ margin:.25rem 0; }
-    .panel input{
-      padding:.6rem .7rem; border:1px solid #bbb; border-radius:8px; width:min(70%, 220px);
-      text-align:center; font-size: var(--fs-base); min-height: 44px;
-    }
-    .panel .row{ display:flex; gap:.5rem; justify-content:center; align-items:center; flex-wrap:wrap; }
-    .panel .cta{
-      background:var(--pink); color:#fff; border:none; padding:.75rem 1.1rem;
-      border-radius:10px; font-weight:800; cursor:pointer; box-shadow:0 6px 16px rgba(231,84,128,.3);
-      min-height:44px; font-size: var(--fs-button);
-    }
-    .dim{ opacity:.45; filter:grayscale(.5) }
+    .panel h3{margin:.25rem 0;color:#5b2a16;font-size:clamp(18px,5.2vw,22px)}
+    .panel p{margin:.25rem 0 .75rem;font-size:var(--fs-small)}
+    .panel ul{margin:.25rem 0 .75rem;padding-left:1.2rem;text-align:left;font-size:var(--fs-small)}
+    .panel li{margin:.25rem 0}
+    .panel input{padding:.6rem .7rem;border:1px solid #bbb;border-radius:8px;width:min(70%,220px);text-align:center;font-size:var(--fs-base);min-height:44px}
+    .panel .row{display:flex;gap:.5rem;justify-content:center;align-items:center;flex-wrap:wrap}
+    .panel .cta{background:var(--pink);color:#fff;border:none;padding:.75rem 1.1rem;border-radius:10px;font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(231,84,128,.3);min-height:44px;font-size:var(--fs-button)}
+    .dim{opacity:.45;filter:grayscale(.5)}
 
-    /* Touch pads & joysticks (responsive) */
+    /* Touch pads & joysticks */
     .touchpad{
-      position:absolute; top:0; height:100%; width:50%;
-      background: transparent; touch-action:none; pointer-events:auto; user-select:none;
+      position:absolute; top:0; height:100%; width:50%; background:transparent;
+      touch-action:none; pointer-events:auto; user-select:none; z-index:1; /* below overlays */
     }
-    #touchP1{ left:0; } #touchP2{ right:0; }
+    .touchpad.disabled{ pointer-events:none; opacity:.6 } /* <-- disabled during overlays */
+    #touchP1{left:0} #touchP2{right:0}
+    .joyBase{position:absolute;width:var(--joyBaseSize);height:var(--joyBaseSize);border-radius:50%;background:var(--joyBase);border:2px solid var(--joyRing);bottom:var(--joyPadInset);opacity:.7;transition:opacity .15s ease}
+    .joyKnob{position:absolute;width:var(--joyKnobSize);height:var(--joyKnobSize);border-radius:50%;background:var(--joyKnob);border:3px solid var(--joyRing);box-shadow:0 6px 16px rgba(0,0,0,.25);transform:translate(-50%,-50%);opacity:.9;transition:opacity .15s ease}
+    #touchP1 .joyBase{left:var(--joyPadInset)} #touchP2 .joyBase{right:var(--joyPadInset)}
+    .padLabel{position:absolute;bottom:calc(var(--joyPadInset) + var(--joyBaseSize) + 8px);font-weight:800;font-size:var(--fs-small);color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.6);opacity:.9}
+    #touchP1 .padLabel{left:calc(var(--joyPadInset) + 6px)} #touchP2 .padLabel{right:calc(var(--joyPadInset) + 6px)}
 
-    .joyBase{
-      position:absolute; width:var(--joyBaseSize); height:var(--joyBaseSize); border-radius:50%;
-      background:var(--joyBase); border:2px solid var(--joyRing);
-      bottom:var(--joyPadInset);
-      opacity:.7; transition:opacity .15s ease;
+    @media (max-width:480px){
+      :root{ --joyBaseSize:88px; --joyKnobSize:50px; --joyPadInset:10px; }
     }
-    .joyKnob{
-      position:absolute; width:var(--joyKnobSize); height:var(--joyKnobSize); border-radius:50%;
-      background:var(--joyKnob); border:3px solid var(--joyRing);
-      box-shadow:0 6px 16px rgba(0,0,0,.25);
-      transform:translate(-50%,-50%); opacity:.9; transition:opacity .15s ease;
-    }
-    #touchP1 .joyBase{ left:var(--joyPadInset); }
-    #touchP2 .joyBase{ right:var(--joyPadInset); }
-    .padLabel{
-      position:absolute; bottom: calc(var(--joyPadInset) + var(--joyBaseSize) + 8px);
-      font-weight:800; font-size: var(--fs-small); color:#fff; text-shadow:0 2px 6px rgba(0,0,0,.6);
-      opacity:.9;
-    }
-    #touchP1 .padLabel{ left: calc(var(--joyPadInset) + 6px); }
-    #touchP2 .padLabel{ right: calc(var(--joyPadInset) + 6px); }
-
-    /* Smaller phones */
-    @media (max-width: 480px){
-      :root{
-        --joyBaseSize: 88px;
-        --joyKnobSize: 50px;
-        --joyPadInset: 10px;
-      }
-    }
-    @media (max-width: 380px){
-      :root{
-        --joyBaseSize: 76px;
-        --joyKnobSize: 44px;
-        --joyPadInset: 8px;
-      }
+    @media (max-width:380px){
+      :root{ --joyBaseSize:76px; --joyKnobSize:44px; --joyPadInset:8px; }
     }
   </style>
 </head>
@@ -203,25 +114,16 @@
   <h1>✨ Please Join Us in Celebrating Our Next Chapter ✨</h1>
   <p>We’re so grateful for your love and support as we begin our life together. Instead of a traditional registry, we’ve created a Honeymoon Fund to help us make lasting memories.</p>
   <p>If you’d like to contribute, please visit:</p>
-  <a href="https://tinyurl.com/DylanMarianneRSVP" target="_blank" class="button" aria-label="Contribute to our Honeymoon Fund via TinyURL">
-    👉 Contribute to Our Honeymoon Fund
-  </a>
+  <a href="https://tinyurl.com/DylanMarianneRSVP" target="_blank" class="button" aria-label="Contribute to our Honeymoon Fund via TinyURL">👉 Contribute to Our Honeymoon Fund</a>
 
   <section class="game-card" aria-labelledby="gameTitle">
     <div class="flex-row" style="justify-content:space-between; max-width:44rem; margin:0 auto;">
       <div class="pill">Bonus: Tiny 8-bit Game</div>
       <div class="flex-row">
         <label for="players">Players:</label>
-        <select id="players" class="sel" title="Choose 1 or 2 players">
-          <option value="1">1 Player</option>
-          <option value="2" selected>2 Players</option>
-        </select>
+        <select id="players" class="sel"><option value="1">1 Player</option><option value="2" selected>2 Players</option></select>
         <label for="difficulty">Difficulty:</label>
-        <select id="difficulty" class="sel" title="Choose difficulty">
-          <option value="1">⭐ Easy</option>
-          <option value="2" selected>⭐⭐ Normal</option>
-          <option value="3">⭐⭐⭐ Hard</option>
-        </select>
+        <select id="difficulty" class="sel"><option value="1">⭐ Easy</option><option value="2" selected>⭐⭐ Normal</option><option value="3">⭐⭐⭐ Hard</option></select>
         <button class="ctrl mute" id="muteBtn" aria-pressed="false">🔈 Sound On</button>
       </div>
     </div>
@@ -250,16 +152,9 @@
           </ul>
           <div class="row" style="margin:.4rem 0 .6rem">
             <label for="playersStart">Players:</label>
-            <select id="playersStart" class="sel">
-              <option value="1">1 Player</option>
-              <option value="2" selected>2 Players</option>
-            </select>
+            <select id="playersStart" class="sel"><option value="1">1 Player</option><option value="2" selected>2 Players</option></select>
             <label for="difficultyStart">Difficulty:</label>
-            <select id="difficultyStart" class="sel">
-              <option value="1">⭐ Easy</option>
-              <option value="2" selected>⭐⭐ Normal</option>
-              <option value="3">⭐⭐⭐ Hard</option>
-            </select>
+            <select id="difficultyStart" class="sel"><option value="1">⭐ Easy</option><option value="2" selected>⭐⭐ Normal</option><option value="3">⭐⭐⭐ Hard</option></select>
           </div>
           <div class="row" style="margin-top:.25rem">
             <button class="cta" id="startOverlayBtn">▶ Start Game</button>
@@ -285,12 +180,12 @@
       </div>
 
       <!-- Two-thumb visible joysticks -->
-      <div id="touchP1" class="touchpad" aria-hidden="true">
+      <div id="touchP1" class="touchpad disabled" aria-hidden="true"> <!-- initially disabled -->
         <div class="joyBase" id="joyBase1"></div>
         <div class="joyKnob" id="joyKnob1"></div>
         <div class="padLabel">P1</div>
       </div>
-      <div id="touchP2" class="touchpad" aria-hidden="true">
+      <div id="touchP2" class="touchpad disabled" aria-hidden="true">
         <div class="joyBase" id="joyBase2"></div>
         <div class="joyKnob" id="joyKnob2"></div>
         <div class="padLabel">P2</div>
@@ -327,9 +222,7 @@
 
   <script>
     (() => {
-      // ---------- DOM ----------
       const canvas = document.getElementById('game');
-      const frame  = document.getElementById('frame');
       const ctx = canvas.getContext('2d');
       const hud = document.getElementById('hud');
       const startBtn = document.getElementById('startBtn');
@@ -348,8 +241,6 @@
       const diffSelStart = document.getElementById('difficultyStart');
       const playersSelStart = document.getElementById('playersStart');
       const dpadP2 = document.getElementById('dpadP2');
-
-      // Touch pads / joystick elements
       const tp1 = document.getElementById('touchP1');
       const tp2 = document.getElementById('touchP2');
       const joyBase1 = document.getElementById('joyBase1');
@@ -357,21 +248,19 @@
       const joyBase2 = document.getElementById('joyBase2');
       const joyKnob2 = document.getElementById('joyKnob2');
 
-      // ---------- Input ----------
       const keys = {};
       const press = (k,v)=>{ keys[k]=v; };
 
-      // prevent page scroll on game controls; allow typing in inputs
+      // Prevent scroll while playing; allow in inputs
       document.addEventListener('keydown', e => {
-        const blockKeys = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter','KeyW','KeyA','KeyS','KeyD'];
-        const isTyping = (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'));
-        if (blockKeys.includes(e.code) && !isTyping) e.preventDefault();
-        if ((e.code === 'Space' || e.code === 'Enter') && startOverlay.classList.contains('show') && !isTyping) {
-          doStart();
-        }
+        const block = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter','KeyW','KeyA','KeyS','KeyD'];
+        const typing = /INPUT|TEXTAREA/.test(e.target.tagName);
+        if (block.includes(e.code) && !typing) e.preventDefault();
+        if ((e.code === 'Space' || e.code === 'Enter') && startOverlay.classList.contains('show') && !typing) doStart();
         keys[e.code] = true;
-      });
+      }, {passive:false});
       document.addEventListener('keyup', e => { keys[e.code] = false; });
+
       document.querySelectorAll('[data-k]').forEach(b=>{
         const k=b.dataset.k;
         b.addEventListener('pointerdown', ()=>press(k,true));
@@ -379,218 +268,116 @@
         b.addEventListener('pointerleave',()=>press(k,false));
       });
 
-      // ---------- Canvas geometry (dynamic aspect) ----------
-      let W = canvas.width, H = canvas.height;
-
+      // Aspect: 16:9 normally, 4:3 on very narrow screens
+      let W=canvas.width, H=canvas.height;
       function setAspectForScreen(){
-        // Use 4:3 on very narrow screens (<=380px), else 16:9
         const narrow = window.innerWidth <= 380;
-        const targetW = 320;
-        const targetH = narrow ? 240 : 180; // 4:3 vs 16:9
-
-        if (canvas.width !== targetW || canvas.height !== targetH){
-          // adjust canvas pixels (no distortion)
-          canvas.width = targetW;
-          canvas.height = targetH;
-          W = targetW; H = targetH;
-
-          // Keep existing entities inside bounds
-          clampAllToBounds();
+        const targetW = 320, targetH = narrow ? 240 : 180;
+        if (canvas.width!==targetW || canvas.height!==targetH){
+          canvas.width=targetW; canvas.height=targetH; W=targetW; H=targetH; clampAllToBounds();
         }
       }
 
-      // ---------- Audio ----------
+      // Audio
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       const actx = new AudioCtx();
-      let muted = false;
+      let muted=false;
       function beep(freq=440, dur=0.07, type='square', vol=0.03){
-        if(muted) return;
-        const o = actx.createOscillator(); const g = actx.createGain();
-        o.type = type; o.frequency.value = freq; g.gain.value = vol;
-        o.connect(g); g.connect(actx.destination); o.start();
+        if(muted) return; const o=actx.createOscillator(), g=actx.createGain();
+        o.type=type; o.frequency.value=freq; g.gain.value=vol; o.connect(g); g.connect(actx.destination); o.start();
         setTimeout(()=>o.stop(), dur*1000);
       }
       const sCollect=()=>beep(880,0.05,'square',0.05);
       const sPower=()=>beep(660,0.12,'sawtooth',0.04);
       const sHit=()=>beep(180,0.09,'square',0.05);
-      muteBtn?.addEventListener('click',()=>{
-        muted=!muted; muteBtn.textContent = muted ? '🔇 Sound Off' : '🔈 Sound On';
-        muteBtn.setAttribute('aria-pressed', muted ? 'true':'false');
-      });
+      muteBtn.addEventListener('click',()=>{ muted=!muted; muteBtn.textContent = muted ? '🔇 Sound Off' : '🔈 Sound On'; muteBtn.setAttribute('aria-pressed', muted ? 'true':'false'); });
 
-      // ---------- Global render scale ----------
-      const ITEM_SCALE = 4;
+      const ITEM_SCALE=4;
 
-      // ---------- Players & Difficulty ----------
-      let players = +playersSel.value;
-      let difficulty = +diffSel.value;
-
-      function syncSelectors(fromOverlay){
-        if(fromOverlay){
-          playersSel.value = playersSelStart.value;
-          diffSel.value = diffSelStart.value;
-        }else{
-          playersSelStart.value = playersSel.value;
-          diffSelStart.value = diffSel.value;
-        }
-        players = +playersSel.value;
-        difficulty = +diffSel.value;
-        dpadP2.classList.toggle('dim', players===1);
-        applyDifficulty(); updateHud();
-      }
-      playersSel.addEventListener('change', ()=>syncSelectors(false));
-      diffSel.addEventListener('change', ()=>syncSelectors(false));
-      playersSelStart.addEventListener('change', ()=>syncSelectors(true));
-      diffSelStart.addEventListener('change', ()=>syncSelectors(true));
-
-      const diffCfg = {
-        1:{CRAB_BASE:0.7,CRAB_RANGE:0.4,CRAB_RAMP:0.4,CRAB_FRAME_MULT:1.000,CRAB_MAX_VX:2.0,CRAB_DRAG:0.997,P_SPEED:1.8,POWER_DUR:7,TICK_SPAWN_COLLECT:0.75,TICK_SPAWN_CRAB:0.45,TICK_SPAWN_POWER:0.35},
-        2:{CRAB_BASE:0.9,CRAB_RANGE:0.7,CRAB_RAMP:0.6,CRAB_FRAME_MULT:1.001,CRAB_MAX_VX:2.2,CRAB_DRAG:0.998,P_SPEED:1.6,POWER_DUR:6,TICK_SPAWN_COLLECT:0.65,TICK_SPAWN_CRAB:0.50,TICK_SPAWN_POWER:0.25},
-        3:{CRAB_BASE:1.2,CRAB_RANGE:1.0,CRAB_RAMP:1.0,CRAB_FRAME_MULT:1.002,CRAB_MAX_VX:2.6,CRAB_DRAG:0.999,P_SPEED:1.5,POWER_DUR:5,TICK_SPAWN_COLLECT:0.55,TICK_SPAWN_CRAB:0.65,TICK_SPAWN_POWER:0.18}
-      };
+      // Difficulty
+      let players=+playersSel.value, difficulty=+diffSel.value;
+      const diffCfg={1:{CRAB_BASE:0.7,CRAB_RANGE:0.4,CRAB_RAMP:0.4,CRAB_FRAME_MULT:1.000,CRAB_MAX_VX:2.0,CRAB_DRAG:0.997,P_SPEED:1.8,POWER_DUR:7,TICK_SPAWN_COLLECT:0.75,TICK_SPAWN_CRAB:0.45,TICK_SPAWN_POWER:0.35},
+                    2:{CRAB_BASE:0.9,CRAB_RANGE:0.7,CRAB_RAMP:0.6,CRAB_FRAME_MULT:1.001,CRAB_MAX_VX:2.2,CRAB_DRAG:0.998,P_SPEED:1.6,POWER_DUR:6,TICK_SPAWN_COLLECT:0.65,TICK_SPAWN_CRAB:0.50,TICK_SPAWN_POWER:0.25},
+                    3:{CRAB_BASE:1.2,CRAB_RANGE:1.0,CRAB_RAMP:1.0,CRAB_FRAME_MULT:1.002,CRAB_MAX_VX:2.6,CRAB_DRAG:0.999,P_SPEED:1.5,POWER_DUR:5,TICK_SPAWN_COLLECT:0.55,TICK_SPAWN_CRAB:0.65,TICK_SPAWN_POWER:0.18}};
       let CRAB_BASE=1,CRAB_RANGE=1,CRAB_RAMP=1,CRAB_FRAME_MULT=1.001,CRAB_MAX_VX=2.2,CRAB_DRAG=0.998;
       let P_SPEED=1.6,POWER_DUR=6,TICK_SPAWN_COLLECT=0.65,TICK_SPAWN_CRAB=0.5,TICK_SPAWN_POWER=0.25;
-
       function applyDifficulty(){
         const c=diffCfg[difficulty];
         CRAB_BASE=c.CRAB_BASE; CRAB_RANGE=c.CRAB_RANGE; CRAB_RAMP=c.CRAB_RAMP; CRAB_FRAME_MULT=c.CRAB_FRAME_MULT;
         CRAB_MAX_VX=c.CRAB_MAX_VX; CRAB_DRAG=c.CRAB_DRAG; P_SPEED=c.P_SPEED; POWER_DUR=c.POWER_DUR;
         TICK_SPAWN_COLLECT=c.TICK_SPAWN_COLLECT; TICK_SPAWN_CRAB=c.TICK_SPAWN_CRAB; TICK_SPAWN_POWER=c.TICK_SPAWN_POWER;
       }
+      function syncSelectors(fromOverlay){
+        if(fromOverlay){ playersSel.value=playersSelStart.value; diffSel.value=diffSelStart.value; }
+        else { playersSelStart.value=playersSel.value; diffSelStart.value=diffSel.value; }
+        players=+playersSel.value; difficulty=+diffSel.value; dpadP2.classList.toggle('dim', players===1); applyDifficulty(); updateHud();
+      }
+      playersSel.addEventListener('change',()=>syncSelectors(false));
+      diffSel.addEventListener('change',()=>syncSelectors(false));
+      playersSelStart.addEventListener('change',()=>syncSelectors(true));
+      diffSelStart.addEventListener('change',()=>syncSelectors(true));
 
-      // ---------- State ----------
-      const state = {
-        running:false, over:false, time:30, tAccum:0,
+      // State
+      const state={running:false,over:false,time:30,tAccum:0,
         p1:{x:W*0.3,y:H*0.6,s:8,vx:0,vy:0,shield:0,turbo:0,score:0},
         p2:{x:W*0.7,y:H*0.6,s:8,vx:0,vy:0,shield:0,turbo:0,score:0},
-        items:[], crabs:[], popups:[],
-        best:+(localStorage.getItem('heartquest_best_total')||0),
-        board:JSON.parse(localStorage.getItem('heartquest_leaderboard')||'[]')
-      };
+        items:[],crabs:[],popups:[],best:+(localStorage.getItem('heartquest_best_total')||0),
+        board:JSON.parse(localStorage.getItem('heartquest_leaderboard')||'[]')};
 
-      // ---------- Helpers ----------
-      const RNG = (a,b)=> a + Math.random()*(b-a);
-      const CLAMP = (v,min,max)=> Math.max(min, Math.min(max,v));
-
+      const RNG=(a,b)=>a+Math.random()*(b-a);
+      const CLAMP=(v,min,max)=>Math.max(min,Math.min(max,v));
       function clampAllToBounds(){
-        const clampP = p => { p.x=CLAMP(p.x,6,W-6); p.y=CLAMP(p.y,12,H-12); };
-        clampP(state.p1); clampP(state.p2);
-        state.items.forEach(it=>{ it.x=CLAMP(it.x,10,W-10); it.y=CLAMP(it.y,20,H-40); });
-        state.crabs.forEach(c=>{ c.x=CLAMP(c.x,12,W-12); c.y=CLAMP(c.y,28,H-40); });
+        const clampP=p=>{p.x=CLAMP(p.x,6,W-6);p.y=CLAMP(p.y,12,H-12);};
+        clampP(state.p1);clampP(state.p2);
+        state.items.forEach(it=>{it.x=CLAMP(it.x,10,W-10);it.y=CLAMP(it.y,20,H-40)});
+        state.crabs.forEach(c=>{c.x=CLAMP(c.x,12,W-12);c.y=CLAMP(c.y,28,H-40)});
       }
 
-      // ---------- Spawning ----------
       function reset(){
-        state.time=30; state.tAccum=0; state.over=false; state.running=false;
-        state.p1.score=0; state.p2.score=0;
-        state.p1.x=W*0.3; state.p1.y=H*0.6; state.p2.x=W*0.7; state.p2.y=H*0.6;
-        state.p1.shield=0; state.p1.turbo=0; state.p2.shield=0; state.p2.turbo=0;
-        state.items=[]; state.crabs=[]; state.popups=[];
-        for(let i=0;i<8;i++) spawnCollectible();
-        for(let i=0;i<4;i++) spawnCrab();
-        for(let i=0;i<2;i++) spawnPowerUp();
-        updateHud(); renderLeaderboard();
+        state.time=30;state.tAccum=0;state.over=false;state.running=false;
+        state.p1.score=0;state.p2.score=0;
+        state.p1.x=W*0.3;state.p1.y=H*0.6;state.p2.x=W*0.7;state.p2.y=H*0.6;
+        state.p1.shield=state.p1.turbo=state.p2.shield=state.p2.turbo=0;
+        state.items=[];state.crabs=[];state.popups=[];
+        for(let i=0;i<8;i++)spawnCollectible();
+        for(let i=0;i<4;i++)spawnCrab();
+        for(let i=0;i<2;i++)spawnPowerUp();
+        updateHud();renderLeaderboard();
       }
+      function spawnCrab(){const side=Math.random()<0.5?0:W;const ramp=1+CRAB_RAMP*(state.time/30);const baseV=(CRAB_BASE+Math.random()*CRAB_RANGE)*ramp*0.85;state.crabs.push({x:side,y:RNG(28,H-40),s:8,vx:side===0?baseV:-baseV});}
+      function spawnCollectible(){const r=Math.random();let type='heart',value=1;if(r>0.85&&r<=0.95){type='margarita';value=3}else if(r>0.95){type='ring';value=7}else if(r>0.65){type='champagne';value=2}state.items.push({kind:'collect',type,val:value,x:RNG(10,W-10),y:RNG(20,H-40)})}
+      function spawnPowerUp(){const r=Math.random();let type='goldheart';if(r>0.9)type='time';else if(r>0.8)type='speed';else if(r>0.65)type='shield';state.items.push({kind:'power',type,val:(type==='goldheart'?5:0),x:RNG(10,W-10),y:RNG(20,H-40)})}
 
-      function spawnCrab(){
-        const side=Math.random()<0.5?0:W; const ramp=1+CRAB_RAMP*(state.time/30);
-        const baseV=(CRAB_BASE+Math.random()*CRAB_RANGE)*ramp*0.85;
-        state.crabs.push({x:side,y:RNG(28,H-40),s:8,vx:side===0?baseV:-baseV});
-      }
-
-      // Collectibles: heart(+1), champagne(+2), margarita(+3), ring(+7)
-      function spawnCollectible(){
-        const r=Math.random(); let type='heart',value=1;
-        if(r>0.85 && r<=0.95){ type='margarita'; value=3; }
-        else if(r>0.95){ type='ring'; value=7; }
-        else if(r>0.65){ type='champagne'; value=2; }
-        state.items.push({kind:'collect',type,val:value,x:RNG(10,W-10),y:RNG(20,H-40)});
-      }
-
-      // Power-ups: goldheart(+5), shield, speed, time(+5s)
-      function spawnPowerUp(){
-        const r=Math.random(); let type='goldheart';
-        if(r>0.9) type='time';
-        else if(r>0.8) type='speed';
-        else if(r>0.65) type='shield';
-        state.items.push({kind:'power',type,val:(type==='goldheart'?5:0),x:RNG(10,W-10),y:RNG(20,H-40)});
-      }
-
-      // ---------- Drawing ----------
-      function pixelHeart(cx, cy, scale=4, color='#ff1f64', outline='#2a0f1a'){
+      function pixelHeart(cx,cy,scale=4,color='#ff1f64',outline='#2a0f1a'){
         const px=[[0,1],[1,0],[2,0],[3,1],[0,2],[1,3],[2,3],[3,2],[1,2],[2,2]];
-        if(outline){ ctx.fillStyle=outline; px.forEach(([x,y])=>{
-          ctx.fillRect(Math.floor(cx+(x-1.5)*scale)-1,Math.floor(cy+(y-1.5)*scale)-1,scale+2,scale+2);
-        });}
-        ctx.fillStyle=color; px.forEach(([x,y])=>{
-          ctx.fillRect(Math.floor(cx+(x-1.5)*scale),Math.floor(cy+(y-1.5)*scale),scale,scale);
-        });
+        if(outline){ctx.fillStyle=outline;px.forEach(([x,y])=>{ctx.fillRect(Math.floor(cx+(x-1.5)*scale)-1,Math.floor(cy+(y-1.5)*scale)-1,scale+2,scale+2)})}
+        ctx.fillStyle=color;px.forEach(([x,y])=>{ctx.fillRect(Math.floor(cx+(x-1.5)*scale),Math.floor(cy+(y-1.5)*scale),scale,scale)})
       }
-
       function pixelItem(kind,x,y){
         const s=ITEM_SCALE;
-        if(kind==='heart'){ pixelHeart(x,y,s,'#ff1f64','#2a0f1a'); pixelHeart(x,y-1,s,'#ff7099',null); }
-        else if(kind==='champagne'){ ctx.fillStyle='#21321f'; ctx.fillRect(x-2*s-1,y-6*s-1,4*s+2,8*s+2);
-          ctx.fillStyle='#2f8a3b'; ctx.fillRect(x-2*s,y-6*s,4*s,8*s); ctx.fillStyle='#d4a73b'; ctx.fillRect(x-1*s,y-8*s,2*s,2*s); }
-        else if(kind==='margarita'){ ctx.fillStyle='#2b2b2b'; ctx.fillRect(x-3*s-1,y-1-1,6*s+2,1+2);
-          ctx.fillRect(x-2*s-1,y-3*s-1,4*s+2,3*s+2); ctx.fillRect(x-1*s-1,y+1-1,2*s+2,3*s+2);
-          ctx.fillRect(x-2*s-1,y+4-1,4*s+2,1+2); ctx.fillRect(x+3*s-1,y-3*s-1,2*s+2,2*s+2);
-          ctx.fillStyle='#e0e0e0'; ctx.fillRect(x-3*s,y-1,6*s,1); ctx.fillStyle = '#b2f7c2'; ctx.fillRect(x-2*s,y-3*s,4*s,3*s);
-          ctx.fillStyle='#e0e0e0'; ctx.fillRect(x-1*s,y+1,2*s,3*s); ctx.fillStyle='#e0e0e0'; ctx.fillRect(x-2*s,y+4,4*s,1);
-          ctx.fillStyle='#8ad64b'; ctx.fillRect(x+3*s,y-3*s,2*s,2*s); }
-        else if(kind==='ring'){ ctx.fillStyle='#735a00'; ctx.fillRect(x-3*s-1,y-3*s-1,6*s+2,6*s+2);
-          ctx.fillStyle='#ffd700'; ctx.fillRect(x-3*s,y-3*s,6*s,6*s); ctx.clearRect(x-1*s,y-1*s,2*s,2*s);
-          ctx.fillStyle='#9ad3ff'; ctx.fillRect(x-1*s,y-6,2*s,2*s); }
-        else if(kind==='goldheart'){ pixelHeart(x,y,s,'#ffdf4d','#6a5400'); }
-        else if(kind==='shield'){ ctx.strokeStyle='#46c2ff'; ctx.lineWidth=2; ctx.strokeRect(x-4*s,y-4*s,8*s,8*s); }
-        else if(kind==='speed'){ ctx.fillStyle='#2b1b47'; ctx.fillRect(x-3*s-1,y-2*s-1,6*s+2,4*s+2);
-          ctx.fillStyle='#9a4dff'; ctx.fillRect(x-3*s,y-2*s,6*s,4*s); ctx.fillRect(x-5,y-1*s,2,2); ctx.fillRect(x+3*s,y-1*s,2,2); }
-        else if(kind==='time'){ // ⏳ time extender
-          ctx.fillStyle='#2b2b2b'; ctx.fillRect(x-3*s-1,y-4*s-1,6*s+2,8*s+2); // outline
-          ctx.fillStyle='#e8e8e8'; ctx.fillRect(x-3*s,y-4*s,6*s,8*s);
-          ctx.clearRect(x-2*s,y-3*s,4*s,3*s); // top bulb
-          ctx.clearRect(x-2*s,y+0*s,4*s,3*s); // bottom bulb
-          ctx.fillStyle='#caa86a'; ctx.fillRect(x-2*s,y-1,4*s,1); // sand neck
-          ctx.fillRect(x-1*s,y+1,2*s,1); // pile
-          ctx.fillStyle='#2b2b2b'; ctx.fillRect(x-3*s,y-4*s,6*s,1); ctx.fillRect(x-3*s,y+4*s-1,6*s,1); // caps
-        }
+        if(kind==='heart'){pixelHeart(x,y,s,'#ff1f64','#2a0f1a');pixelHeart(x,y-1,s,'#ff7099',null)}
+        else if(kind==='champagne'){ctx.fillStyle='#21321f';ctx.fillRect(x-2*s-1,y-6*s-1,4*s+2,8*s+2);ctx.fillStyle='#2f8a3b';ctx.fillRect(x-2*s,y-6*s,4*s,8*s);ctx.fillStyle='#d4a73b';ctx.fillRect(x-1*s,y-8*s,2*s,2*s)}
+        else if(kind==='margarita'){ctx.fillStyle='#2b2b2b';ctx.fillRect(x-3*s-1,y-1-1,6*s+2,1+2);ctx.fillRect(x-2*s-1,y-3*s-1,4*s+2,3*s+2);ctx.fillRect(x-1*s-1,y+1-1,2*s+2,3*s+2);ctx.fillRect(x-2*s-1,y+4-1,4*s+2,1+2);ctx.fillRect(x+3*s-1,y-3*s-1,2*s+2,2*s+2);ctx.fillStyle='#e0e0e0';ctx.fillRect(x-3*s,y-1,6*s,1);ctx.fillStyle='#b2f7c2';ctx.fillRect(x-2*s,y-3*s,4*s,3*s);ctx.fillStyle='#e0e0e0';ctx.fillRect(x-1*s,y+1,2*s,3*s);ctx.fillStyle='#e0e0e0';ctx.fillRect(x-2*s,y+4,4*s,1);ctx.fillStyle='#8ad64b';ctx.fillRect(x+3*s,y-3*s,2*s,2*s)}
+        else if(kind==='ring'){ctx.fillStyle='#735a00';ctx.fillRect(x-3*s-1,y-3*s-1,6*s+2,6*s+2);ctx.fillStyle='#ffd700';ctx.fillRect(x-3*s,y-3*s,6*s,6*s);ctx.clearRect(x-1*s,y-1*s,2*s,2*s);ctx.fillStyle='#9ad3ff';ctx.fillRect(x-1*s,y-6,2*s,2*s)}
+        else if(kind==='goldheart'){pixelHeart(x,y,s,'#ffdf4d','#6a5400')}
+        else if(kind==='shield'){ctx.strokeStyle='#46c2ff';ctx.lineWidth=2;ctx.strokeRect(x-4*s,y-4*s,8*s,8*s)}
+        else if(kind==='speed'){ctx.fillStyle='#2b1b47';ctx.fillRect(x-3*s-1,y-2*s-1,6*s+2,4*s+2);ctx.fillStyle='#9a4dff';ctx.fillRect(x-3*s,y-2*s,6*s,4*s);ctx.fillRect(x-5,y-1*s,2,2);ctx.fillRect(x+3*s,y-1*s,2,2)}
+        else if(kind==='time'){ctx.fillStyle='#2b2b2b';ctx.fillRect(x-3*s-1,y-4*s-1,6*s+2,8*s+2);ctx.fillStyle='#e8e8e8';ctx.fillRect(x-3*s,y-4*s,6*s,8*s);ctx.clearRect(x-2*s,y-3*s,4*s,3*s);ctx.clearRect(x-2*s,y+0*s,4*s,3*s);ctx.fillStyle='#caa86a';ctx.fillRect(x-2*s,y-1,4*s,1);ctx.fillRect(x-1*s,y+1,2*s,1);ctx.fillStyle='#2b2b2b';ctx.fillRect(x-3*s,y-4*s,6*s,1);ctx.fillRect(x-3*s,y+4*s-1,6*s,1)}
       }
 
       function drawBackground(){
         const total=state.p1.score + (players===2?state.p2.score:0);
         const phase = total>=20 ? 'night' : total>=10 ? 'sunset' : 'day';
-        if(phase==='day'){ ctx.fillStyle='#9fd8ff'; ctx.fillRect(0,0,W,H);
-          ctx.fillStyle='#5cc1ff'; ctx.fillRect(0,H*0.55,W,H*0.25);
-          ctx.fillStyle='#44a9e9'; ctx.fillRect(0,H*0.60,W,H*0.08);
-        } else if(phase==='sunset'){ const g=ctx.createLinearGradient(0,0,0,H);
-          g.addColorStop(0,'#ffb169'); g.addColorStop(1,'#ffd59a'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-          ctx.fillStyle='#fe9a5c'; ctx.fillRect(0,H*0.55,W,H*0.25); ctx.fillStyle='#e86f42'; ctx.fillRect(0,H*0.60,W,H*0.08);
-        } else { ctx.fillStyle='#0a1c3a'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#fff';
-          for(let i=0;i<30;i++) ctx.fillRect((i*11)%W,(i*7)%Math.floor(H*0.5),1,1);
-          ctx.fillStyle='#0f3a5f'; ctx.fillRect(0,H*0.55,W,H*0.25); ctx.fillStyle='#0c2c49'; ctx.fillRect(0,H*0.60,W,H*0.08);
-        }
-        ctx.fillStyle = '#ffd59a'; ctx.fillRect(0,H*0.75,W,H*0.25);
+        if(phase==='day'){ctx.fillStyle='#9fd8ff';ctx.fillRect(0,0,W,H);ctx.fillStyle='#5cc1ff';ctx.fillRect(0,H*0.55,W,H*0.25);ctx.fillStyle='#44a9e9';ctx.fillRect(0,H*0.60,W,H*0.08)}
+        else if(phase==='sunset'){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#ffb169');g.addColorStop(1,'#ffd59a');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.fillStyle='#fe9a5c';ctx.fillRect(0,H*0.55,W,H*0.25);ctx.fillStyle='#e86f42';ctx.fillRect(0,H*0.60,W,H*0.08)}
+        else {ctx.fillStyle='#0a1c3a';ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff';for(let i=0;i<30;i++)ctx.fillRect((i*11)%W,(i*7)%Math.floor(H*0.5),1,1);ctx.fillStyle='#0f3a5f';ctx.fillRect(0,H*0.55,W,H*0.25);ctx.fillStyle='#0c2c49';ctx.fillRect(0,H*0.60,W,H*0.08)}
+        ctx.fillStyle='#ffd59a';ctx.fillRect(0,H*0.75,W,H*0.25);
       }
+      function drawPlayer(p,color){ctx.fillStyle=color;ctx.fillRect(p.x-6,p.y-6,12,12);ctx.fillStyle='#fff';ctx.fillRect(p.x-3,p.y-1,2,2);ctx.fillStyle='#000';ctx.fillRect(p.x-2,p.y,1,1);if(p.shield>0){ctx.strokeStyle='#46c2ff';ctx.lineWidth=1;ctx.strokeRect(p.x-8,p.y-8,16,16)}}
+      function drawCrabs(){state.crabs.forEach(c=>{ctx.fillStyle='#b33b3b';ctx.fillRect(c.x-7,c.y-3,14,6);ctx.fillStyle='#fff';ctx.fillRect(c.x-5,c.y-5,2,2);ctx.fillRect(c.x+3,c.y-5,2,2);ctx.fillStyle='#000';ctx.fillRect(c.x-4,c.y-4,1,1);ctx.fillRect(c.x+4,c.y-4,1,1);ctx.fillStyle='#8d2a2a';ctx.fillRect(c.x-8,c.y+2,3,1);ctx.fillRect(c.x+5,c.y+2,3,1)})}
 
-      function drawPlayer(p,color){
-        ctx.fillStyle=color; ctx.fillRect(p.x-6,p.y-6,12,12);
-        ctx.fillStyle='#fff'; ctx.fillRect(p.x-3,p.y-1,2,2);
-        ctx.fillStyle='#000'; ctx.fillRect(p.x-2,p.y,1,1);
-        if(p.shield>0){ ctx.strokeStyle='#46c2ff'; ctx.lineWidth=1; ctx.strokeRect(p.x-8,p.y-8,16,16); }
-      }
-
-      function drawCrabs(){
-        state.crabs.forEach(c=>{
-          ctx.fillStyle='#b33b3b'; ctx.fillRect(c.x-7,c.y-3,14,6);
-          ctx.fillStyle='#fff'; ctx.fillRect(c.x-5,c.y-5,2,2); ctx.fillRect(c.x+3,c.y-5,2,2);
-          ctx.fillStyle='#000'; ctx.fillRect(c.x-4,c.y-4,1,1); ctx.fillRect(c.x+4,c.y-4,1,1);
-          ctx.fillStyle='#8d2a2a'; ctx.fillRect(c.x-8,c.y+2,3,1); ctx.fillRect(c.x+5,c.y+2,3,1);
-        });
-      }
-
-      // ---------- Logic ----------
       function updatePlayers(dt){
-        const p1=state.p1, p2=state.p2;
+        const p1=state.p1,p2=state.p2;
         const p1Speed=(p1.turbo>0?P_SPEED*1.8:P_SPEED);
         const p2Speed=(p2.turbo>0?P_SPEED*1.8:P_SPEED);
         p1.vx=(keys['ArrowRight']?1:0)-(keys['ArrowLeft']?1:0);
@@ -603,84 +390,62 @@
           p2.x=CLAMP(p2.x+p2.vx*p2Speed*dt*60,6,W-6);
           p2.y=CLAMP(p2.y+p2.vy*p2Speed*dt*60,12,H-12);
         }
-        if(p1.shield>0) p1.shield-=dt; if(p1.turbo>0) p1.turbo-=dt;
-        if(p2.shield>0) p2.shield-=dt; if(p2.turbo>0) p2.turbo-=dt;
+        if(p1.shield>0)p1.shield-=dt; if(p1.turbo>0)p1.turbo-=dt;
+        if(p2.shield>0)p2.shield-=dt; if(p2.turbo>0)p2.turbo-=dt;
       }
-
       function handleCollectibles(){
-        const arr = players===2?[state.p1,state.p2]:[state.p1];
-        state.items = state.items.filter(it=>{
+        const arr=players===2?[state.p1,state.p2]:[state.p1];
+        state.items=state.items.filter(it=>{
           let taken=false;
           for(const p of arr){
-            const d=Math.hypot(it.x-p.x,it.y-p.y);
-            if(d<11){
-              if(it.kind==='collect'){
-                const add=it.val|0; (p===state.p1?state.p1:state.p2).score+=add;
-                state.popups.push({x:p.x,y:p.y-8,text:`+${add}`,t:0}); sCollect();
-                if(Math.random()<0.7) spawnCollectible();
-              } else {
-                if(it.type==='goldheart'){ (p===state.p1?state.p1:state.p2).score+=5; state.popups.push({x:p.x,y:p.y-8,text:'+5',t:0}); }
-                else if(it.type==='shield'){ p.shield=POWER_DUR; state.popups.push({x:p.x,y:p.y-8,text:'SHIELD',t:0}); }
-                else if(it.type==='speed'){ p.turbo=POWER_DUR; state.popups.push({x:p.x,y:p.y-8,text:'SPEED',t:0}); }
-                else if(it.type==='time'){ state.time = Math.min(99, state.time+5); state.popups.push({x:p.x,y:p.y-8,text:'+5s',t:0}); updateHud(); }
-                sPower(); if(Math.random()<0.5) spawnPowerUp();
-              }
+            if(Math.hypot(it.x-p.x,it.y-p.y)<11){
+              if(it.kind==='collect'){const add=it.val|0;(p===state.p1?state.p1:state.p2).score+=add;state.popups.push({x:p.x,y:p.y-8,text:`+${add}`,t:0});sCollect(); if(Math.random()<0.7)spawnCollectible();}
+              else{ if(it.type==='goldheart'){(p===state.p1?state.p1:state.p2).score+=5;state.popups.push({x:p.x,y:p.y-8,text:'+5',t:0})}
+                    else if(it.type==='shield'){p.shield=POWER_DUR;state.popups.push({x:p.x,y:p.y-8,text:'SHIELD',t:0})}
+                    else if(it.type==='speed'){p.turbo=POWER_DUR;state.popups.push({x:p.x,y:p.y-8,text:'SPEED',t:0})}
+                    else if(it.type==='time'){state.time=Math.min(99,state.time+5);state.popups.push({x:p.x,y:p.y-8,text:'+5s',t:0});updateHud()}
+                    sPower(); if(Math.random()<0.5)spawnPowerUp(); }
               taken=true; break;
             }
           }
           return !taken;
         });
       }
-
       function handleCrabs(dt){
-        const arr = players===2?[state.p1,state.p2]:[state.p1];
+        const arr=players===2?[state.p1,state.p2]:[state.p1];
         state.crabs.forEach(c=>{
           c.x+=c.vx*dt*60;
-          if(c.x<12){ c.x=12; c.vx=Math.abs(c.vx); }
-          if(c.x>W-12){ c.x=W-12; c.vx=-Math.abs(c.vx); }
-          c.vx*=CRAB_FRAME_MULT; c.vx*=CRAB_DRAG;
-          const s=Math.sign(c.vx)||1; c.vx=s*Math.min(Math.abs(c.vx),CRAB_MAX_VX);
-          arr.forEach(p=>{
-            const d=Math.hypot(c.x-p.x,c.y-p.y);
-            if(d<12 && p.shield<=0){
-              (p===state.p1?state.p1:state.p2).score=Math.max(0,(p===state.p1?state.p1:state.p2).score-1);
-              state.popups.push({x:p.x,y:p.y-8,text:'-1',t:0}); sHit();
-            }
-          });
+          if(c.x<12){c.x=12;c.vx=Math.abs(c.vx)}
+          if(c.x>W-12){c.x=W-12;c.vx=-Math.abs(c.vx)}
+          c.vx*=CRAB_FRAME_MULT; c.vx*=CRAB_DRAG; const s=Math.sign(c.vx)||1; c.vx=s*Math.min(Math.abs(c.vx),CRAB_MAX_VX);
+          arr.forEach(p=>{ if(Math.hypot(c.x-p.x,c.y-p.y)<12 && p.shield<=0){ (p===state.p1?state.p1:state.p2).score=Math.max(0,(p===state.p1?state.p1:state.p2).score-1); state.popups.push({x:p.x,y:p.y-8,text:'-1',t:0}); sHit(); }});
         });
       }
-
       function updateTimer(dt){
         state.tAccum+=dt;
         if(state.running && state.tAccum>=1){
           state.time-=1; state.tAccum=0;
-          if(Math.random()<TICK_SPAWN_COLLECT) spawnCollectible();
-          if(Math.random()<TICK_SPAWN_CRAB) spawnCrab();
-          if(Math.random()<TICK_SPAWN_POWER) spawnPowerUp();
-          if(state.time<=0) endGame();
+          if(Math.random()<TICK_SPAWN_COLLECT)spawnCollectible();
+          if(Math.random()<TICK_SPAWN_CRAB)spawnCrab();
+          if(Math.random()<TICK_SPAWN_POWER)spawnPowerUp();
+          if(state.time<=0)endGame();
           updateHud();
         }
       }
-
       function updateHud(){
-        if(players===2)
-          hud.textContent=`P1 Score: ${state.p1.score} | P2 Score: ${state.p2.score} | Time: ${state.time}s | Best: ${state.best} | ${['⭐ Easy','⭐⭐ Normal','⭐⭐⭐ Hard'][difficulty-1]}`;
-        else
-          hud.textContent=`Score: ${state.p1.score} | Time: ${state.time}s | Best: ${state.best} | ${['⭐ Easy','⭐⭐ Normal','⭐⭐⭐ Hard'][difficulty-1]}`;
+        if(players===2) hud.textContent=`P1 Score: ${state.p1.score} | P2 Score: ${state.p2.score} | Time: ${state.time}s | Best: ${state.best} | ${['⭐ Easy','⭐⭐ Normal','⭐⭐⭐ Hard'][difficulty-1]}`;
+        else hud.textContent=`Score: ${state.p1.score} | Time: ${state.time}s | Best: ${state.best} | ${['⭐ Easy','⭐⭐ Normal','⭐⭐⭐ Hard'][difficulty-1]}`;
       }
 
-      // ---------- Loop ----------
       let last=performance.now();
       function loop(t){
         const dt=Math.min(0.033,(t-last)/1000); last=t;
-
         drawBackground();
         state.items.forEach(it=>pixelItem(it.type,it.x,it.y));
-        drawCrabs();
+        state.crabs.length && drawCrabs();
         drawPlayer(state.p1,'#ff6fa5'); if(players===2) drawPlayer(state.p2,'#4aa3ff');
 
-        // popups
-        state.popups = state.popups.filter(pp=>{
+        state.popups=state.popups.filter(pp=>{
           pp.t+=0.02; const a=Math.max(0,1-pp.t); const yy=pp.y-pp.t*12;
           ctx.globalAlpha=0.6*a; ctx.fillStyle='#000'; const w=Math.max(26,ctx.measureText(pp.text).width+6);
           ctx.fillRect(pp.x-8,yy-10,w,12);
@@ -692,21 +457,20 @@
         requestAnimationFrame(loop);
       }
 
-      // ---------- End / Leaderboard ----------
       function endGame(){
         state.running=false; state.over=true;
         const total=state.p1.score+(players===2?state.p2.score:0);
         if(total>state.best){ state.best=total; localStorage.setItem('heartquest_best_total',total); }
         finalScores.textContent = players===2 ? `Final — P1: ${state.p1.score} | P2: ${state.p2.score} | Total: ${total}` : `Final — Score: ${state.p1.score}`;
-        endOverlay.classList.add('show'); initialsInput.focus(); updateHud();
+        endOverlay.classList.add('show');
+        tp1.classList.add('disabled'); tp2.classList.add('disabled'); // disable touchpads
+        initialsInput.focus(); updateHud();
       }
-
       function renderLeaderboard(){
         const list=(state.board||[]).slice(0,5);
         lbRows.innerHTML = list.length ? list.map((r,i)=>`<div class="lb-row"><span>#${i+1} ${r.i}</span><span>${r.s}</span></div>`).join('')
           : `<div class="lb-row"><span>No scores yet — be the first!</span><span>—</span></div>`;
       }
-
       function saveLeaderboard(){
         const initials=(initialsInput.value||'').toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)||'GUEST';
         const total=state.p1.score+(players===2?state.p2.score:0);
@@ -716,162 +480,85 @@
         renderLeaderboard();
       }
 
-      // ---------- Controls / Start flow ----------
       function doStart(){
-        syncSelectors(true);
+        // sync selections and hide overlays
+        playersSel.value = playersSelStart.value; diffSel.value = diffSelStart.value;
+        players=+playersSel.value; difficulty=+diffSel.value; applyDifficulty();
         startOverlay.classList.remove('show'); endOverlay.classList.remove('show');
-        applyDifficulty(); reset(); state.running=true; updateHud();
+        tp1.classList.remove('disabled'); tp2.classList.remove('disabled'); // enable touchpads now
+        reset(); state.running=true; updateHud();
       }
       const pause=()=>{ state.running=!state.running; pauseBtn.textContent=state.running?'Pause':'Resume'; };
 
-      startBtn.addEventListener('click',doStart);
-      startOverlayBtn.addEventListener('click',doStart);
+      // Start: bind both click and pointerup for mobile reliability
+      ['click','pointerup'].forEach(ev=>{
+        startBtn.addEventListener(ev,doStart);
+        startOverlayBtn.addEventListener(ev,doStart);
+        playAgain.addEventListener(ev,doStart);
+        saveScoreBtn.addEventListener(ev,()=>{ saveLeaderboard(); initialsInput.value=''; });
+      });
       pauseBtn.addEventListener('click',pause);
-      playAgain.addEventListener('click',doStart);
-      saveScoreBtn.addEventListener('click',()=>{ saveLeaderboard(); initialsInput.value=''; });
 
       document.addEventListener('keydown',e=>{
-        const isTyping=(e.target && (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'));
-        if(e.code==='Space' && !isTyping && !startOverlay.classList.contains('show')){ e.preventDefault(); pause(); }
+        const typing=/INPUT|TEXTAREA/.test(e.target.tagName);
+        if(e.code==='Space' && !typing && !startOverlay.classList.contains('show')){ e.preventDefault(); pause(); }
       });
 
-      // ---------- Two-thumb joystick logic ----------
-      function dirFromVector(dx, dy, dead=12){
-        const a = Math.abs(dx), b = Math.abs(dy);
-        if (a < dead && b < dead) return null;
-        if (a > b) return dx > 0 ? 'right' : 'left';
-        return dy > 0 ? 'down' : 'up';
-      }
-      function setP1Dir(dir){ keys['ArrowLeft']=(dir==='left'); keys['ArrowRight']=(dir==='right'); keys['ArrowUp']=(dir==='up'); keys['ArrowDown']=(dir==='down'); }
-      function clearP1(){ keys['ArrowLeft']=keys['ArrowRight']=keys['ArrowUp']=keys['ArrowDown']=false; }
-      function setP2Dir(dir){ keys['KeyA']=(dir==='left'); keys['KeyD']=(dir==='right'); keys['KeyW']=(dir==='up'); keys['KeyS']=(dir==='down'); }
-      function clearP2(){ keys['KeyA']=keys['KeyD']=keys['KeyW']=keys['KeyS']=false; }
-
-      let p1Ptr=null, p2Ptr=null;
-      function centerOf(el){ const r=el.getBoundingClientRect(); return { x:r.left+r.width/2, y:r.top+r.height/2 }; }
-      function moveKnob(knob, x, y){ knob.style.left = x+'px'; knob.style.top = y+'px'; knob.style.bottom = 'auto'; knob.style.right='auto'; }
-
-      function bindPad(container, baseEl, knobEl, which){
-        const resetKnob = ()=>{
-          const c = centerOf(baseEl);
-          moveKnob(knobEl, c.x, c.y);
-          baseEl.style.opacity = .7; knobEl.style.opacity = .9;
-        };
-        resetKnob();
-
-        container.addEventListener('pointerdown', (e)=>{
-          e.preventDefault(); container.setPointerCapture(e.pointerId);
-          const isP1 = which==='p1';
-          if (isP1 && p1Ptr!==null) return;
-          if (!isP1 && p2Ptr!==null) return;
-          (isP1? p1Ptr : p2Ptr) = e.pointerId;
-
-          baseEl.style.opacity = 1; knobEl.style.opacity = 1;
-
-          const c = centerOf(baseEl);
-          const dx = e.clientX - c.x, dy = e.clientY - c.y;
-          // travel radius based on current sizes
-          const R = Math.max(40, parseInt(getComputedStyle(baseEl).width)/2 - parseInt(getComputedStyle(knobEl).width)/2 - 4);
-          const dist = Math.hypot(dx,dy); const clamped = dist>R ? R/dist : 1;
-          moveKnob(knobEl, c.x + dx*clamped, c.y + dy*clamped);
-          const dir = dirFromVector(dx,dy,10);
-          if(isP1){ dir?setP1Dir(dir):clearP1(); } else { dir?setP2Dir(dir):clearP2(); }
+      // Joystick helpers
+      function dirFromVector(dx,dy,dead=12){const a=Math.abs(dx),b=Math.abs(dy);if(a<dead&&b<dead)return null; if(a>b)return dx>0?'right':'left'; return dy>0?'down':'up';}
+      function setP1Dir(d){keys['ArrowLeft']=(d==='left');keys['ArrowRight']=(d==='right');keys['ArrowUp']=(d==='up');keys['ArrowDown']=(d==='down')}
+      function clearP1(){keys['ArrowLeft']=keys['ArrowRight']=keys['ArrowUp']=keys['ArrowDown']=false}
+      function setP2Dir(d){keys['KeyA']=(d==='left');keys['KeyD']=(d==='right');keys['KeyW']=(d==='up');keys['KeyS']=(d==='down')}
+      function clearP2(){keys['KeyA']=keys['KeyD']=keys['KeyW']=keys['KeyS']=false}
+      let p1Ptr=null,p2Ptr=null;
+      function centerOf(el){const r=el.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}}
+      function moveKnob(knob,x,y){knob.style.left=x+'px';knob.style.top=y+'px';knob.style.bottom='auto';knob.style.right='auto'}
+      function bindPad(container,baseEl,knobEl,which){
+        const reset=()=>{const c=centerOf(baseEl);moveKnob(knobEl,c.x,c.y);baseEl.style.opacity=.7;knobEl.style.opacity=.9};
+        reset();
+        container.addEventListener('pointerdown',e=>{
+          if(container.classList.contains('disabled'))return;
+          e.preventDefault();container.setPointerCapture(e.pointerId);
+          const p1=which==='p1'; if(p1&&p1Ptr!==null)return; if(!p1&&p2Ptr!==null)return;
+          (p1?p1Ptr:p2Ptr)=e.pointerId; baseEl.style.opacity=1;knobEl.style.opacity=1;
+          const c=centerOf(baseEl); const dx=e.clientX-c.x,dy=e.clientY-c.y;
+          const R=Math.max(40,parseInt(getComputedStyle(baseEl).width)/2 - parseInt(getComputedStyle(knobEl).width)/2 - 4);
+          const dist=Math.hypot(dx,dy),k=dist>R?R/dist:1; moveKnob(knobEl,c.x+dx*k,c.y+dy*k);
+          const dir=dirFromVector(dx,dy,10); if(p1){dir?setP1Dir(dir):clearP1()} else {dir?setP2Dir(dir):clearP2()}
         });
-
-        container.addEventListener('pointermove', (e)=>{
-          const isP1 = which==='p1';
-          if ((isP1 && e.pointerId!==p1Ptr) || (!isP1 && e.pointerId!==p2Ptr)) return;
-          e.preventDefault();
-          const c = centerOf(baseEl);
-          const dx = e.clientX - c.x, dy = e.clientY - c.y;
-          const R = Math.max(40, parseInt(getComputedStyle(baseEl).width)/2 - parseInt(getComputedStyle(knobEl).width)/2 - 4);
-          const dist = Math.hypot(dx,dy); const clamped = dist>R ? R/dist : 1;
-          moveKnob(knobEl, c.x + dx*clamped, c.y + dy*clamped);
-          const dir = dirFromVector(dx,dy,10);
-          if(isP1){ dir?setP1Dir(dir):clearP1(); } else { dir?setP2Dir(dir):clearP2(); }
+        container.addEventListener('pointermove',e=>{
+          const p1=which==='p1'; if((p1&&e.pointerId!==p1Ptr)||(!p1&&e.pointerId!==p2Ptr))return;
+          if(container.classList.contains('disabled'))return;
+          e.preventDefault(); const c=centerOf(baseEl); const dx=e.clientX-c.x,dy=e.clientY-c.y;
+          const R=Math.max(40,parseInt(getComputedStyle(baseEl).width)/2 - parseInt(getComputedStyle(knobEl).width)/2 - 4);
+          const dist=Math.hypot(dx,dy),k=dist>R?R/dist:1; moveKnob(knobEl,c.x+dx*k,c.y+dy*k);
+          const dir=dirFromVector(dx,dy,10); if(p1){dir?setP1Dir(dir):clearP1()} else {dir?setP2Dir(dir):clearP2()}
         });
-
-        function end(e){
-          const isP1 = which==='p1';
-          if ((isP1 && e.pointerId!==p1Ptr) || (!isP1 && e.pointerId!==p2Ptr)) return;
-          if(isP1){ p1Ptr=null; clearP1(); } else { p2Ptr=null; clearP2(); }
-          resetKnob();
-        }
-        container.addEventListener('pointerup', end);
-        container.addEventListener('pointercancel', end);
-        container.addEventListener('pointerleave', end);
-
-        // re-center on resize/orientation
-        window.addEventListener('resize', resetKnob);
-        window.addEventListener('orientationchange', resetKnob);
+        function end(e){const p1=which==='p1'; if((p1&&e.pointerId!==p1Ptr)||(!p1&&e.pointerId!==p2Ptr))return; if(p1){p1Ptr=null;clearP1()} else {p2Ptr=null;clearP2()} reset();}
+        container.addEventListener('pointerup',end);container.addEventListener('pointercancel',end);container.addEventListener('pointerleave',end);
+        window.addEventListener('resize',reset); window.addEventListener('orientationchange',reset);
       }
+      bindPad(tp1,joyBase1,joyKnob1,'p1'); bindPad(tp2,joyBase2,joyKnob2,'p2');
 
-      bindPad(tp1, joyBase1, joyKnob1, 'p1');
-      bindPad(tp2, joyBase2, joyKnob2, 'p2');
-
-      // ---------- End / Leaderboard ----------
-      function endGame(){
-        state.running=false; state.over=true;
-        const total=state.p1.score+(players===2?state.p2.score:0);
-        if(total>state.best){ state.best=total; localStorage.setItem('heartquest_best_total',total); }
-        finalScores.textContent = players===2 ? `Final — P1: ${state.p1.score} | P2: ${state.p2.score} | Total: ${total}` : `Final — Score: ${state.p1.score}`;
-        endOverlay.classList.add('show'); initialsInput.focus(); updateHud();
-      }
-
-      function renderLeaderboard(){
-        const list=(state.board||[]).slice(0,5);
-        lbRows.innerHTML = list.length ? list.map((r,i)=>`<div class="lb-row"><span>#${i+1} ${r.i}</span><span>${r.s}</span></div>`).join('')
-          : `<div class="lb-row"><span>No scores yet — be the first!</span><span>—</span></div>`;
-      }
-
-      function saveLeaderboard(){
-        const initials=(initialsInput.value||'').toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)||'GUEST';
-        const total=state.p1.score+(players===2?state.p2.score:0);
-        const entry={i:initials,s:total,t:Date.now()};
-        const board=(state.board||[]); board.push(entry); board.sort((a,b)=>b.s-a.s||a.t-b.t);
-        state.board=board.slice(0,5); localStorage.setItem('heartquest_leaderboard',JSON.stringify(state.board));
-        renderLeaderboard();
-      }
-
-      // ---------- Start / Pause ----------
-      function doStart(){
-        syncSelectors(true);
-        startOverlay.classList.remove('show'); endOverlay.classList.remove('show');
-        applyDifficulty(); reset(); state.running=true; updateHud();
-      }
-      const pause=()=>{ state.running=!state.running; pauseBtn.textContent=state.running?'Pause':'Resume'; };
-      startBtn.addEventListener('click',doStart);
-      startOverlayBtn.addEventListener('click',doStart);
-      pauseBtn.addEventListener('click',pause);
-      playAgain.addEventListener('click',doStart);
-      saveScoreBtn.addEventListener('click',()=>{ saveLeaderboard(); initialsInput.value=''; });
-      document.addEventListener('keydown',e=>{
-        const isTyping=(e.target && (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'));
-        if(e.code==='Space' && !isTyping && !startOverlay.classList.contains('show')){ e.preventDefault(); pause(); }
-      });
-
-      // ---------- Boot & Resize ----------
-      function boot(){
-        setAspectForScreen();
-        applyDifficulty(); reset(); requestAnimationFrame(loop);
-        dpadP2.classList.toggle('dim', +playersSel.value===1);
-      }
+      // Boot
+      function updatePadsDisabled(){ const anyOverlay = startOverlay.classList.contains('show') || endOverlay.classList.contains('show'); tp1.classList.toggle('disabled', anyOverlay); tp2.classList.toggle('disabled', anyOverlay); }
+      function boot(){ setAspectForScreen(); applyDifficulty(); reset(); requestAnimationFrame(loop); dpadP2.classList.toggle('dim', +playersSel.value===1); updatePadsDisabled(); }
       boot();
-
       window.addEventListener('resize', setAspectForScreen);
       window.addEventListener('orientationchange', setAspectForScreen);
-
-      // resume audio on first gesture
       ['click','touchstart','keydown','pointerdown'].forEach(evt=>{
         window.addEventListener(evt,()=>{ if(actx.state==='suspended') actx.resume(); },{once:true});
       });
+
+      // Keep pads disabled when overlays toggle
+      const mo=new MutationObserver(updatePadsDisabled);
+      mo.observe(startOverlay,{attributes:true,attributeFilter:['class']});
+      mo.observe(endOverlay,{attributes:true,attributeFilter:['class']});
     })();
   </script>
 
   <div style="margin-top:1.1rem">
-    <a href="https://tinyurl.com/DylanMarianneRSVP" target="_blank" class="button">
-      💖 Contribute to Our Honeymoon Fund
-    </a>
+    <a href="https://tinyurl.com/DylanMarianneRSVP" target="_blank" class="button">💖 Contribute to Our Honeymoon Fund</a>
   </div>
 </body>
 </html>
