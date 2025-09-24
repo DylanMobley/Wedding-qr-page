@@ -266,10 +266,10 @@ window.addEventListener('error', e => console.log('💥', e.message));
     }
   }
 
-  // --------- Audio (SFX + Music) ----------
+  /* ===== Audio (SFX + Music) ===== */
   let actx=null; try{const AC=window.AudioContext||window.webkitAudioContext; actx=new AC();}catch(e){}
   let muted=false;
-  // SFX beeps
+
   function beep(f=440,d=0.07,t='square',v=0.03){
     if(muted||!actx) return;
     const o=actx.createOscillator(),g=actx.createGain();
@@ -280,7 +280,6 @@ window.addEventListener('error', e => console.log('💥', e.message));
   const sPower =()=>beep(660,0.12,'sawtooth',0.04);
   const sHit   =()=>beep(180,0.09,'square',0.05);
 
-  // Music nodes + simple sequencer
   let musicGain, delay, feedback, filter;
   let musicTimer=null, padTimer=null;
   function ensureMusicGraph(){
@@ -290,10 +289,9 @@ window.addEventListener('error', e => console.log('💥', e.message));
     delay=actx.createDelay(0.6); delay.delayTime.value=0.28;
     feedback=actx.createGain(); feedback.gain.value=0.35;
     filter=actx.createBiquadFilter(); filter.type='lowpass'; filter.frequency.value=4200;
-
     musicGain.connect(filter).connect(delay).connect(actx.destination);
     filter.connect(actx.destination);
-    delay.connect(feedback).connect(delay); // echo loop
+    delay.connect(feedback).connect(delay);
   }
   function musicNote(freq=440, dur=0.18, type='square', vol=0.22){
     if(muted||!actx) return;
@@ -304,48 +302,54 @@ window.addEventListener('error', e => console.log('💥', e.message));
     o.start(); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
     o.stop(actx.currentTime + dur + 0.02);
   }
-  // Dreamy pad (quiet triangle)
   function padNote(freq=220, dur=0.6, vol=0.06){
     if(muted||!actx) return;
     ensureMusicGraph();
     const o=actx.createOscillator(), g=actx.createGain();
     o.type='triangle'; o.frequency.value=freq; g.gain.value=vol;
-    o.connect(g); g.connect(delay); // send straight to delay cloud
+    o.connect(g); g.connect(delay);
     o.start(); g.gain.linearRampToValueAtTime(0.0, actx.currentTime + dur);
     o.stop(actx.currentTime + dur + 0.05);
   }
-  // MIDI to Hz
   const hz=n=>440*Math.pow(2,(n-69)/12);
 
   function startMusic(){
     if(!actx) return;
     ensureMusicGraph();
-    stopMusic(); // clear old timers
-
-    const tempo=92; // bpm
-    const sixteenth=60000/tempo/4; // ms
-    const leadScale=[72,76,79,83,81,76,79,74]; // C major dreamy hops
-    const padArp=[48,55,60,55,50,57,62,57];   // soft lower arpeggio
-
+    stopMusic();
+    const tempo=92;
+    const sixteenth=60000/tempo/4;
+    const leadScale=[72,76,79,83,81,76,79,74];
+    const padArp=[48,55,60,55,50,57,62,57];
     let i=0, j=0;
     musicTimer=setInterval(()=>{
       const m=leadScale[i%leadScale.length];
-      const freq=hz(m + (Math.random()<0.25?12:0)); // occasional octave lift
+      const freq=hz(m + (Math.random()<0.25?12:0));
       musicNote(freq, 0.17, Math.random()<0.3?'triangle':'square', 0.18);
-      if(i%8===0) musicNote(hz(36),0.25,'square',0.12); // soft kick-ish bass pulse
+      if(i%8===0) musicNote(hz(36),0.25,'square',0.12);
       i++;
-    }, sixteenth*2); // eighth-notes
-
+    }, sixteenth*2);
     padTimer=setInterval(()=>{
       const p=padArp[j%padArp.length];
       padNote(hz(p), 0.7, 0.05);
       j++;
-    }, sixteenth*4); // quarter-notes
+    }, sixteenth*4);
   }
   function stopMusic(){
     if(musicTimer){clearInterval(musicTimer); musicTimer=null;}
     if(padTimer){clearInterval(padTimer); padTimer=null;}
   }
+  function fadeOutMusic(ms=1200){
+    if(!actx||!musicGain) return;
+    const now=actx.currentTime;
+    const t=now+ms/1000;
+    const start=musicGain.gain.value;
+    musicGain.gain.cancelScheduledValues(now);
+    musicGain.gain.setValueAtTime(start, now);
+    musicGain.gain.exponentialRampToValueAtTime(0.0001, t);
+    setTimeout(()=>{ stopMusic(); if(!muted) musicGain.gain.value=0.06; }, ms+50);
+  }
+
   ['click','touchstart','pointerdown','keydown'].forEach(evt=>{
     window.addEventListener(evt,()=>{ if(actx&&actx.state==='suspended') actx.resume(); },{once:true});
   });
@@ -384,11 +388,13 @@ window.addEventListener('error', e => console.log('💥', e.message));
     }catch{return[];}
   }
 
+  /* ===== Game state ===== */
+  const TIME_TICK = 1; // ensure countdown by 1s
   const state={
     running:false,over:false,time:30,tAccum:0,spawnTick:0,
-    countdown:0, // 3..2..1..0
-    p1:{x:W*.3,y:H*.6,s:8,vx:0,vy:0,shield:0,turbo:0,score:0},
-    p2:{x:W*.7,y:H*.6,s:8,vx:0,vy:0,shield:0,turbo:0,score:0},
+    countdown:0,
+    p1:{x:W*.3,y:H*.6,s:8,vx:0,vy:0,shield:0,turbo:0,score:0,hurt:0},
+    p2:{x:W*.7,y:H*.6,s:8,vx:0,vy:0,shield:0,turbo:0,score:0,hurt:0},
     items:[],crabs:[],
     best:Math.max(0,+(localStorage.getItem(STORAGE_BEST)||0)||0),
     board:safeLoadBoard()
@@ -397,7 +403,7 @@ window.addEventListener('error', e => console.log('💥', e.message));
   const RNG=(a,b)=>a+Math.random()*(b-a);
   const CLAMP=(v,min,max)=>Math.max(min,Math.min(max,v));
 
-  /* ===== Sprite helpers & pixel maps ===== */
+  /* ===== Sprites ===== */
   const ITEM_SCALE=4; const SPR={};
   function drawSprite(x,y,sprite,scale=4){
     const px=sprite.px,pal=sprite.pal; const h=px.length,w=px[0].length;
@@ -409,7 +415,6 @@ window.addEventListener('error', e => console.log('💥', e.message));
     const w=sprite.px[0].length*scale, h=sprite.px.length*scale;
     drawSprite(cx-(w>>1),cy-(h>>1),sprite,scale);
   }
-  // Items
   SPR.heart={pal:{r:'#ff5b8a',s:'#d13b67'},px:[
     '..rr..rr..','.rrrrrrrr.','rrrrrrrrrr','rrrrrrrrrr','.rrrrrrrr.','..rrrrrr..','...rrrr...','....rr....','.....s....'
   ]};
@@ -426,11 +431,10 @@ window.addEventListener('error', e => console.log('💥', e.message));
   SPR.crab={pal:{r:'#c0392b',d:'#8e2b21',k:'#000'},px:[
     'r....rr....','.r..rrrr..r','..rrrrrrrr.','..rrrrrrrr.','.rrrrrrrrrr','r.rrrkkrr.r','...r..r....'
   ]};
-  // Players — P1 teal star, P2 blue bean
   SPR.p1={pal:{a:'#00c2ff',k:'#003b4a'},px:['..a..','a.a.a','.aaa.','a.a.a','..a..']};
   SPR.p2={pal:{a:'#4d7dff',k:'#000'},px:['.aaaa.','aaaaaa','aaaaaa','.aaaa.','..aa..']};
 
-  /* ===== Tiny bitmap font (4x6) ===== */
+  /* ===== Pixel font ===== */
   const FONT4x6={
     A:['.11.','1..1','1111','1..1','1..1','....'], B:['111.','1..1','111.','1..1','111.','....'],
     C:['.111','1...','1...','1...','.111','....'], D:['111.','1..1','1..1','1..1','111.','....'],
@@ -462,7 +466,7 @@ window.addEventListener('error', e => console.log('💥', e.message));
     }
   }
 
-  /* ===== Game core ===== */
+  /* ===== Core ===== */
   function clampAllToBounds(){
     const cp=p=>{p.x=CLAMP(p.x,6,W-6);p.y=CLAMP(p.y,12,H-12)};
     cp(state.p1);cp(state.p2);
@@ -472,7 +476,7 @@ window.addEventListener('error', e => console.log('💥', e.message));
 
   function reset(){
     state.time=30;state.tAccum=0;state.spawnTick=0;state.over=false;state.running=false;
-    state.p1.score=0;state.p2.score=0;
+    state.p1.score=0;state.p2.score=0; state.p1.hurt=0; state.p2.hurt=0;
     state.p1.x=W*.3;state.p1.y=H*.6;state.p2.x=W*.7;state.p2.y=H*.6;
     state.p1.shield=0;state.p1.turbo=0;state.p2.shield=0;state.p2.turbo=0;
     state.items=[];state.crabs=[];
@@ -522,7 +526,7 @@ window.addEventListener('error', e => console.log('💥', e.message));
   function hit(a,b,rad=7){const dx=a.x-b.x,dy=a.y-b.y;return (dx*dx+dy*dy)<(rad*rad);}
 
   function handlePower(p,type){
-    if(type==='time'){state.time=Math.min(60,state.time+5);sPower();}
+    if(type==='time'){state.time=Math.min(60,state.time+5);sPower();} // still +5s as UI states
     else if(type==='shield'){p.shield=Math.max(p.shield,POWER_DUR);sPower();}
     else if(type==='speed'){p.turbo=Math.max(p.turbo,POWER_DUR);sPower();}
     else if(type==='golden'){p.score+=5;sPower();}
@@ -530,11 +534,12 @@ window.addEventListener('error', e => console.log('💥', e.message));
   }
 
   function update(dt){
+    // timers / second tick
     state.tAccum+=dt;
     if(state.tAccum>=1000){
       state.tAccum-=1000;
       if(state.running&&!state.over){
-        state.time=Math.max(0,state.time-1);
+        state.time=Math.max(0,state.time - TIME_TICK);
         if(state.p1.shield>0)state.p1.shield--;
         if(state.p2.shield>0)state.p2.shield--;
         if(state.p1.turbo>0)state.p1.turbo--;
@@ -543,6 +548,9 @@ window.addEventListener('error', e => console.log('💥', e.message));
         updateHud();
       }
     }
+    // per-frame cooldowns
+    state.p1.hurt=Math.max(0,state.p1.hurt-dt);
+    state.p2.hurt=Math.max(0,state.p2.hurt-dt);
 
     state.spawnTick+=dt;
     const spawnEvery=420;
@@ -553,7 +561,7 @@ window.addEventListener('error', e => console.log('💥', e.message));
       if(Math.random()<TICK_SPAWN_POWER) spawnPowerUp();
     }
 
-    // Crabs sweep across with slight sine bob; remove when offscreen
+    // crabs
     for(let i=state.crabs.length-1;i>=0;i--){
       const c=state.crabs[i];
       c.t+=dt*0.004;
@@ -563,17 +571,21 @@ window.addEventListener('error', e => console.log('💥', e.message));
 
     movePlayers(dt);
 
-    // Item collection
+    // items
     for(let i=state.items.length-1;i>=0;i--){
       const it=state.items[i];
       if(hit(state.p1,it)){ if(it.kind==='collect'){state.p1.score+=it.val;sCollect();} else handlePower(state.p1,it.type); state.items.splice(i,1); continue; }
       if(players===2 && hit(state.p2,it)){ if(it.kind==='collect'){state.p2.score+=it.val;sCollect();} else handlePower(state.p2,it.type); state.items.splice(i,1); continue; }
     }
 
-    // Crab hits
+    // crab hits — deduct 1 per contact with brief i-frames
     for(const c of state.crabs){
-      if(hit(state.p1,c)){ if(state.p1.shield<=0){state.p1.score=Math.max(0,state.p1.score-1);sHit();} }
-      if(players===2 && hit(state.p2,c)){ if(state.p2.shield<=0){state.p2.score=Math.max(0,state.p2.score-1);sHit();} }
+      if(hit(state.p1,c) && state.p1.shield<=0 && state.p1.hurt<=0){
+        state.p1.score=Math.max(0,state.p1.score-1); state.p1.hurt=600; sHit();
+      }
+      if(players===2 && hit(state.p2,c) && state.p2.shield<=0 && state.p2.hurt<=0){
+        state.p2.score=Math.max(0,state.p2.score-1); state.p2.hurt=600; sHit();
+      }
     }
   }
 
@@ -603,21 +615,25 @@ window.addEventListener('error', e => console.log('💥', e.message));
     // crabs
     state.crabs.forEach(c=>drawSpriteCentered(c.x,c.y,SPR.crab,ITEM_SCALE-1));
 
-    // players
-    drawSpriteCentered(state.p1.x,state.p1.y,SPR.p1,ITEM_SCALE+1);
+    // players (blink slightly when hurt)
+    if(state.p1.hurt<=0 || Math.floor(Date.now()/120)%2===0){
+      drawSpriteCentered(state.p1.x,state.p1.y,SPR.p1,ITEM_SCALE+1);
+    }
     if(state.p1.shield>0){ctx.strokeStyle='#ffffff';ctx.lineWidth=1;ctx.strokeRect(state.p1.x-10,state.p1.y-10,20,20);}
     if(players===2){
-      drawSpriteCentered(state.p2.x,state.p2.y,SPR.p2,ITEM_SCALE);
+      if(state.p2.hurt<=0 || Math.floor(Date.now()/120)%2===0){
+        drawSpriteCentered(state.p2.x,state.p2.y,SPR.p2,ITEM_SCALE);
+      }
       if(state.p2.shield>0){ctx.strokeStyle='#ffffff';ctx.lineWidth=1;ctx.strokeRect(state.p2.x-10,state.p2.y-10,20,20);}
     }
 
-    // Canvas HUD (bitmap font)
+    // HUD
     drawText(6,6,`P1 ${state.p1.score}`,2,'#222');
     if(players===2) drawText(74,6,`P2 ${state.p2.score}`,2,'#222');
     drawText(W-90,6,`T ${state.time}s`,2,'#222');
   }
 
-  // Countdown overlay (3..2..1..Go!)
+  // Countdown frames
   function drawCountdownFrame(numText){
     drawBackdrop();
     drawText(W/2-16, H/2-12, numText, 4, '#111');
@@ -639,9 +655,11 @@ window.addEventListener('error', e => console.log('💥', e.message));
     const list=(state.board||[]).slice(0,10);
     lbRows.innerHTML=list.length?list.map((e,i)=>`<div class="lb-row"><span>${i+1}. ${e.initials}</span><span>${e.score}</span></div>`).join(''):'<div class="lb-row">No scores yet — be the first!</div>';
   }
+
   function endGame(){
     state.over=true;state.running=false;cancelAnimationFrame(rafId);
     finalScores.textContent=`Final: P1 ${state.p1.score} — P2 ${state.p2.score}`;
+    fadeOutMusic(1200); // smooth audio fade
     endOverlay.classList.add('show');
   }
 
@@ -670,7 +688,7 @@ window.addEventListener('error', e => console.log('💥', e.message));
   wireJoystick(tp2,joyBase2,joyKnob2,{up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD'});
   function togglePads(){tp1.classList.remove('disabled');tp2.classList.toggle('disabled',players!==2);}
 
-  // Public handlers
+  // Mute toggle
   window.__toggleMute=function(){
     muted=!muted;
     if(musicGain) musicGain.gain.value = muted ? 0 : 0.06;
@@ -701,12 +719,8 @@ window.addEventListener('error', e => console.log('💥', e.message));
     difficulty=+(diffSelStart.value||diffSel.value);
     playersSel.value=String(players); diffSel.value=String(difficulty);
     applyDifficulty(); togglePads();
-
-    startOverlay.classList.remove('show');
-    endOverlay.classList.remove('show');
-
+    startOverlay.classList.remove('show'); endOverlay.classList.remove('show');
     reset();
-    // music kicks on start (browser will allow after user gesture)
     startMusic();
     startCountdown();
   };
@@ -721,7 +735,7 @@ window.addEventListener('error', e => console.log('💥', e.message));
       startOverlay.classList.add('show');
     }else{
       startOverlay.classList.remove('show');
-      startCountdown(); // resume with a short countdown
+      startCountdown();
     }
   });
 
