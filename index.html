@@ -167,7 +167,7 @@
         </div>
       </div>
 
-      <!-- Two-thumb pads (visual only in this cut) -->
+      <!-- Two-thumb pads -->
       <div id="touchP1" class="touchpad disabled" aria-hidden="true">
         <div class="joyBase" id="joyBase1"></div>
         <div class="joyKnob" id="joyKnob1"></div>
@@ -209,7 +209,6 @@
   </section>
 
   <script>
-    // Show JS errors (helps on mobile via chrome://inspect)
     window.addEventListener('error', e => console.log('💥', e.message));
 
     (() => {
@@ -230,11 +229,14 @@
       const dpadButtons = document.querySelectorAll('[data-k]');
       const tp1 = document.getElementById('touchP1');
       const tp2 = document.getElementById('touchP2');
+      const joyBase1 = document.getElementById('joyBase1');
+      const joyKnob1 = document.getElementById('joyKnob1');
+      const joyBase2 = document.getElementById('joyBase2');
+      const joyKnob2 = document.getElementById('joyKnob2');
 
       const keys = {};
       const press = (k,v)=>{ keys[k]=v; };
 
-      // Keyboard + onscreen d-pad
       document.addEventListener('keydown', e => {
         const block=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter','KeyW','KeyA','KeyS','KeyD'];
         const typing=/INPUT|TEXTAREA/.test(e.target.tagName);
@@ -261,7 +263,7 @@
 
       // Audio
       let actx=null; try{const AC=window.AudioContext||window.webkitAudioContext; actx=new AC();}catch(e){}
-      let muted=false; // used by beep
+      let muted=false;
       function beep(f=440,d=0.07,t='square',v=0.03){
         if(muted||!actx) return;
         const o=actx.createOscillator(), g=actx.createGain();
@@ -275,8 +277,7 @@
         window.addEventListener(evt,()=>{ if(actx && actx.state==='suspended') actx.resume(); },{once:true});
       });
 
-      const ITEM_SCALE=4;
-
+      /* ================== DIFFICULTY ================== */
       const diffCfg = {
         1:{CRAB_BASE:0.7,CRAB_RANGE:0.4,CRAB_RAMP:0.4,CRAB_FRAME_MULT:1.000,CRAB_MAX_VX:2.0,CRAB_DRAG:0.997,P_SPEED:1.8,POWER_DUR:7,TICK_SPAWN_COLLECT:0.75,TICK_SPAWN_CRAB:0.45,TICK_SPAWN_POWER:0.35},
         2:{CRAB_BASE:0.9,CRAB_RANGE:0.7,CRAB_RAMP:0.6,CRAB_FRAME_MULT:1.001,CRAB_MAX_VX:2.2,CRAB_DRAG:0.998,P_SPEED:1.6,POWER_DUR:6,TICK_SPAWN_COLLECT:0.65,TICK_SPAWN_CRAB:0.50,TICK_SPAWN_POWER:0.25},
@@ -293,22 +294,145 @@
         TICK_SPAWN_COLLECT=c.TICK_SPAWN_COLLECT;TICK_SPAWN_CRAB=c.TICK_SPAWN_CRAB;TICK_SPAWN_POWER=c.TICK_SPAWN_POWER;
       }
 
-      playersSel.addEventListener('change', ()=>{players=+playersSel.value; playersSelStart.value=playersSel.value;});
+      playersSel.addEventListener('change', ()=>{players=+playersSel.value; togglePads(); playersSelStart.value=playersSel.value;});
       diffSel.addEventListener('change', ()=>{difficulty=+diffSel.value; diffSelStart.value=diffSel.value; applyDifficulty();});
-      playersSelStart.addEventListener('change', ()=>{playersSel.value=playersSelStart.value; players=+playersSel.value;});
+      playersSelStart.addEventListener('change', ()=>{playersSel.value=playersSelStart.value; players=+playersSel.value; togglePads();});
       diffSelStart.addEventListener('change', ()=>{diffSel.value=diffSelStart.value; difficulty=+diffSel.value; applyDifficulty();});
 
       const STORAGE_BEST='heartquest_best_total', STORAGE_LB='heartquest_leaderboard';
+
+      /* ================== LEADERBOARD SANITIZER ================== */
+      function safeLoadBoard(){
+        try{
+          const raw = JSON.parse(localStorage.getItem(STORAGE_LB) || '[]');
+          const cleaned = (Array.isArray(raw)?raw:[])
+            .filter(e=>e && typeof e==='object')
+            .map(e=>({
+              initials: (e.initials && String(e.initials).toUpperCase().slice(0,3)) || 'YOU',
+              score: Number.isFinite(+e.score) ? +e.score : 0,
+              ts: +e.ts || Date.now()
+            }))
+            .filter(e=>e.score>=0);
+          localStorage.setItem(STORAGE_LB, JSON.stringify(cleaned));
+          return cleaned;
+        }catch{ return []; }
+      }
+
       const state={
         running:false,over:false,time:30,tAccum:0, spawnTick:0,
         p1:{x:W*.3,y:H*.6,s:8,vx:0,vy:0,shield:0,turbo:0,score:0},
         p2:{x:W*.7,y:H*.6,s:8,vx:0,vy:0,shield:0,turbo:0,score:0},
-        items:[],crabs:[],best:+(localStorage.getItem(STORAGE_BEST)||0),
-        board:JSON.parse(localStorage.getItem(STORAGE_LB)||'[]')
+        items:[],crabs:[],
+        best: Math.max(0, +(localStorage.getItem(STORAGE_BEST)||0) || 0),
+        board: safeLoadBoard()
       };
 
       const RNG=(a,b)=>a+Math.random()*(b-a);
       const CLAMP=(v,min,max)=>Math.max(min,Math.min(max,v));
+
+      /* ================== SPRITE HELPERS + PIXEL MAPS ================== */
+      const ITEM_SCALE = 4;
+      const SPR = {};
+
+      function drawSprite(x, y, sprite, scale=4){
+        const px = sprite.px, pal = sprite.pal;
+        const h = px.length, w = px[0].length;
+        for(let row=0; row<h; row++){
+          for(let col=0; col<w; col++){
+            const c = px[row][col];
+            if(c==='.') continue;
+            ctx.fillStyle = pal[c] || '#000';
+            ctx.fillRect(Math.round(x + col*scale), Math.round(y + row*scale), scale, scale);
+          }
+        }
+      }
+      function drawSpriteCentered(cx, cy, sprite, scale=4){
+        const w = sprite.px[0].length * scale;
+        const h = sprite.px.length * scale;
+        drawSprite(cx - (w>>1), cy - (h>>1), sprite, scale);
+      }
+
+      SPR.heart = {
+        pal: { r:'#ff5b8a', s:'#d13b67' },
+        px: [
+          '..rr..rr..',
+          '.rrrrrrrr.',
+          'rrrrrrrrrr',
+          'rrrrrrrrrr',
+          '.rrrrrrrr.',
+          '..rrrrrr..',
+          '...rrrr...',
+          '....rr....',
+          '.....s....'
+        ]
+      };
+      SPR.heartGold = { pal: { r:'#ffd700', s:'#b59400' }, px: SPR.heart.px };
+
+      SPR.ring = {
+        pal: { g:'#ffd700', d:'#b59400' },
+        px: [
+          '..gggggg..',
+          '.ggddddgg.',
+          'ggd....dgg',
+          'gd......dg',
+          'gd......dg',
+          'ggd....dgg',
+          '.ggddddgg.',
+          '..gggggg..'
+        ]
+      };
+
+      SPR.champagne = {
+        pal: { w:'#ffffff', b:'#87c66b', s:'#c0c0c0' },
+        px: [
+          '..wwww..',
+          '.wwbbww.',
+          '.wbbbbw.',
+          '..wbbw..',
+          '...ww...',
+          '..ssss..',
+          '...ss...',
+          '..ssss..'
+        ]
+      };
+
+      SPR.margarita = {
+        pal: { g:'#58d68d', w:'#ffffff', s:'#c0c0c0' },
+        px: [
+          '.ggggggg.',
+          'ggggggggg',
+          '.ggggggg.',
+          '..gwwwg..',
+          '...gsg...',
+          '..gsssg..',
+          '...sss...',
+          '..gsssg..'
+        ]
+      };
+
+      SPR.crab = {
+        pal: { r:'#c0392b', d:'#8e2b21', k:'#000' },
+        px: [
+          'r....rr....',
+          '.r..rrrr..r',
+          '..rrrrrrrr.',
+          '..rrrrrrrr.',
+          '.rrrrrrrrrr',
+          'r.rrrkkrr.r',
+          '...r..r....'
+        ]
+      };
+
+      SPR.p1 = { pal: { a:'#ff4d6d', k:'#000' }, px: [
+        '.aaaa.',
+        'aaaaaa',
+        'aaaaaa',
+        '.aaaa.',
+        '..aa..'
+      ]};
+      SPR.p2 = { pal: { a:'#4d7dff', k:'#000' }, px: SPR.p1.px };
+
+      /* ================== CORE GAME ================== */
       function clampAllToBounds(){
         const cp=p=>{p.x=CLAMP(p.x,6,W-6);p.y=CLAMP(p.y,12,H-12)};
         cp(state.p1);cp(state.p2);
@@ -347,19 +471,16 @@
         state.items.push({kind:'power',type,x:RNG(10,W-10),y:RNG(20,H-40)});
       }
 
-      // Physics / input
       function movePlayers(dt){
         const s1 = P_SPEED * (1 + (state.p1.turbo>0?0.8:0));
         const s2 = P_SPEED * (1 + (state.p2.turbo>0?0.8:0));
         const step = dt*0.06;
 
-        // P1 arrows
         if(keys['ArrowLeft'])  state.p1.x -= s1*step;
         if(keys['ArrowRight']) state.p1.x += s1*step;
         if(keys['ArrowUp'])    state.p1.y -= s1*step;
         if(keys['ArrowDown'])  state.p1.y += s1*step;
 
-        // P2 WASD
         if(players===2){
           if(keys['KeyA']) state.p2.x -= s2*step;
           if(keys['KeyD']) state.p2.x += s2*step;
@@ -370,11 +491,17 @@
         clampAllToBounds();
       }
 
-      // Collisions
       function hit(a,b,rad=7){ const dx=a.x-b.x, dy=a.y-b.y; return (dx*dx+dy*dy) < (rad*rad); }
 
+      function handlePower(p, type){
+        if(type==='time'){ state.time = Math.min(60, state.time+5); sPower(); }
+        else if(type==='shield'){ p.shield = Math.max(p.shield, POWER_DUR); sPower(); }
+        else if(type==='speed'){ p.turbo = Math.max(p.turbo, POWER_DUR); sPower(); }
+        else if(type==='golden'){ p.score += 5; sPower(); }
+        updateHud();
+      }
+
       function update(dt){
-        // timer
         state.tAccum += dt;
         if(state.tAccum >= 1000){
           state.tAccum -= 1000;
@@ -389,9 +516,8 @@
           }
         }
 
-        // spawning
         state.spawnTick += dt;
-        const spawnEvery = 400; // ms
+        const spawnEvery = 400;
         while(state.spawnTick >= spawnEvery){
           state.spawnTick -= spawnEvery;
           if(Math.random()<TICK_SPAWN_COLLECT) spawnCollectible();
@@ -399,7 +525,6 @@
           if(Math.random()<TICK_SPAWN_POWER) spawnPowerUp();
         }
 
-        // crabs move
         state.crabs.forEach(c=>{
           c.x += c.vx;
           c.vx *= CRAB_DRAG * CRAB_FRAME_MULT;
@@ -407,10 +532,8 @@
           if(c.x < 10 || c.x > W-10){ c.vx *= -1; }
         });
 
-        // players move
         movePlayers(dt);
 
-        // collect items
         for(let i=state.items.length-1;i>=0;i--){
           const it = state.items[i];
           if(hit(state.p1,it)){
@@ -425,7 +548,6 @@
           }
         }
 
-        // crab hits
         for(const c of state.crabs){
           if(hit(state.p1,c)){
             if(state.p1.shield<=0){ state.p1.score = Math.max(0, state.p1.score-1); sHit(); }
@@ -436,46 +558,58 @@
         }
       }
 
-      function handlePower(p, type){
-        if(type==='time'){ state.time = Math.min(60, state.time+5); sPower(); }
-        else if(type==='shield'){ p.shield = Math.max(p.shield, POWER_DUR); sPower(); }
-        else if(type==='speed'){ p.turbo = Math.max(p.turbo, POWER_DUR); sPower(); }
-        else if(type==='golden'){ p.score += 5; sPower(); }
-        updateHud();
-      }
-
       function draw(){
-        // sky
-        ctx.fillStyle = '#9fd8ff';
-        ctx.fillRect(0,0,W,H);
-        // ground
-        ctx.fillStyle = '#87c66b';
-        ctx.fillRect(0,H-18,W,18);
+        // sky + ground
+        ctx.fillStyle = '#9fd8ff'; ctx.fillRect(0,0,W,H);
+        ctx.fillStyle = '#87c66b'; ctx.fillRect(0,H-18,W,18);
 
         // items
         state.items.forEach(it=>{
           if(it.kind==='power'){
-            ctx.fillStyle = it.type==='golden' ? '#ffd700' : '#ffe08a';
+            if(it.type==='golden'){
+              drawSpriteCentered(it.x, it.y, SPR.heartGold, ITEM_SCALE-1);
+            }else if(it.type==='time'){
+              drawSpriteCentered(it.x, it.y, SPR.ring, ITEM_SCALE-2);
+            }else if(it.type==='shield'){
+              const shield = {pal:{r:'#ffffff',s:'#e0e0e0'}, px: SPR.heart.px};
+              drawSpriteCentered(it.x, it.y, shield, ITEM_SCALE-1);
+            }else if(it.type==='speed'){
+              drawSpriteCentered(it.x, it.y, SPR.champagne, ITEM_SCALE-1);
+            }
           } else {
-            ctx.fillStyle = it.type==='heart' ? '#ff5b8a' :
-                            it.type==='champagne' ? '#ff9fb3' :
-                            it.type==='margarita' ? '#58d68d' : '#d1a3ff';
+            if(it.type==='heart'){
+              drawSpriteCentered(it.x, it.y, SPR.heart, ITEM_SCALE-1);
+            }else if(it.type==='champagne'){
+              drawSpriteCentered(it.x, it.y, SPR.champagne, ITEM_SCALE-1);
+            }else if(it.type==='margarita'){
+              drawSpriteCentered(it.x, it.y, SPR.margarita, ITEM_SCALE-1);
+            }else if(it.type==='ring'){
+              drawSpriteCentered(it.x, it.y, SPR.ring, ITEM_SCALE-2);
+            }
           }
-          ctx.fillRect(it.x-3, it.y-3, 6, 6);
         });
 
         // crabs
-        ctx.fillStyle = '#c0392b';
-        state.crabs.forEach(c=>{ ctx.fillRect(c.x-4, c.y-3, 8, 6); });
+        state.crabs.forEach(c=>{ drawSpriteCentered(c.x, c.y, SPR.crab, ITEM_SCALE-1); });
 
         // players
-        ctx.fillStyle = '#ff4d6d';
-        ctx.fillRect(state.p1.x-5, state.p1.y-5, 10, 10);
-        if(state.p1.shield>0){ ctx.strokeStyle='#ffffff'; ctx.lineWidth=1; ctx.strokeRect(state.p1.x-6.5, state.p1.y-6.5, 13, 13); }
+        drawSpriteCentered(state.p1.x, state.p1.y, SPR.p1, ITEM_SCALE);
+        if(state.p1.shield>0){
+          ctx.strokeStyle='#ffffff'; ctx.lineWidth=1;
+          ctx.strokeRect(state.p1.x-((SPR.p1.px[0].length*ITEM_SCALE)/2+2),
+                         state.p1.y-((SPR.p1.px.length*ITEM_SCALE)/2+2),
+                         SPR.p1.px[0].length*ITEM_SCALE+4,
+                         SPR.p1.px.length*ITEM_SCALE+4);
+        }
         if(players===2){
-          ctx.fillStyle = '#4d7dff';
-          ctx.fillRect(state.p2.x-5, state.p2.y-5, 10, 10);
-          if(state.p2.shield>0){ ctx.strokeStyle='#ffffff'; ctx.lineWidth=1; ctx.strokeRect(state.p2.x-6.5, state.p2.y-6.5, 13, 13); }
+          drawSpriteCentered(state.p2.x, state.p2.y, SPR.p2, ITEM_SCALE);
+          if(state.p2.shield>0){
+            ctx.strokeStyle='#ffffff'; ctx.lineWidth=1;
+            ctx.strokeRect(state.p2.x-((SPR.p2.px[0].length*ITEM_SCALE)/2+2),
+                           state.p2.y-((SPR.p2.px.length*ITEM_SCALE)/2+2),
+                           SPR.p2.px[0].length*ITEM_SCALE+4,
+                           SPR.p2.px.length*ITEM_SCALE+4);
+          }
         }
       }
 
@@ -496,10 +630,10 @@
       }
 
       function renderLeaderboard(){
-        lbRows.innerHTML = (state.board||[])
-          .slice(0,10)
-          .map((e,i)=>`<div class="lb-row"><span>${i+1}. ${e.initials}</span><span>${e.score}</span></div>`)
-          .join('') || '<div class="lb-row">No scores yet — be the first!</div>';
+        const list = (state.board||[]).slice(0,10);
+        lbRows.innerHTML = list.length
+          ? list.map((e,i)=>`<div class="lb-row"><span>${i+1}. ${e.initials}</span><span>${e.score}</span></div>`).join('')
+          : '<div class="lb-row">No scores yet — be the first!</div>';
       }
 
       function endGame(){
@@ -510,25 +644,59 @@
         endOverlay.classList.add('show');
       }
 
+      // --- Touch joysticks ---
+      function wireJoystick(padEl, baseEl, knobEl, mapping){
+        const DEAD = 10, MAX = 42; let activeId = null;
+        const reset = ()=>{
+          knobEl.style.left = baseEl.style.left = '';
+          knobEl.style.top  = baseEl.style.top  = '';
+          ['up','down','left','right'].forEach(dir=> keys[mapping[dir]] = false);
+        };
+        padEl.addEventListener('pointerdown', (e)=>{
+          activeId = e.pointerId; padEl.setPointerCapture(activeId);
+          const r = padEl.getBoundingClientRect();
+          const x = e.clientX - r.left, y = e.clientY - r.top;
+          baseEl.style.left = (x-50)+'px'; baseEl.style.bottom = '12px';
+          knobEl.style.left = x+'px'; knobEl.style.top  = y+'px';
+        });
+        padEl.addEventListener('pointermove', (e)=>{
+          if(e.pointerId !== activeId) return;
+          const r = padEl.getBoundingClientRect();
+          const x = e.clientX - r.left, y = e.clientY - r.top;
+          const baseRect = baseEl.getBoundingClientRect();
+          const cx = baseRect.left - r.left + baseRect.width/2;
+          const cy = baseRect.top  - r.top  + baseRect.height/2;
+          let dx = x - cx, dy = y - cy;
+          const dist = Math.hypot(dx, dy);
+          const MAX = 42; if(dist > MAX){ dx *= MAX/dist; dy *= MAX/dist; }
+          knobEl.style.left = (cx + dx) + 'px'; knobEl.style.top  = (cy + dy) + 'px';
+          const left = dx < -DEAD, right = dx > DEAD, up = dy < -DEAD, down = dy > DEAD;
+          keys[mapping.left]=left; keys[mapping.right]=right; keys[mapping.up]=up; keys[mapping.down]=down;
+          e.preventDefault();
+        }, {passive:false});
+        const end = (e)=>{ if(e.pointerId !== activeId) return; reset(); padEl.releasePointerCapture(activeId); activeId = null; };
+        padEl.addEventListener('pointerup', end); padEl.addEventListener('pointercancel', end);
+      }
+      wireJoystick(tp1, joyBase1, joyKnob1, {up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'});
+      wireJoystick(tp2, joyBase2, joyKnob2, {up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD'});
+
+      function togglePads(){ tp1.classList.remove('disabled'); tp2.classList.toggle('disabled', players!==2); }
+
       // Public controls for inline handlers
       window.__toggleMute = function __toggleMute(){
         muted = !muted;
         const btn = document.getElementById('muteBtn');
         btn.setAttribute('aria-pressed', String(muted));
         btn.textContent = muted ? '🔇 Sound Off' : '🔈 Sound On';
-      }
+      };
 
       window.__doStart = function __doStart(){
-        // sync selection
         players = +(playersSelStart.value || playersSel.value);
         difficulty = +(diffSelStart.value || diffSel.value);
         playersSel.value = String(players);
         diffSel.value = String(difficulty);
         applyDifficulty();
-
-        // enable touch pads visuals (controls are via dpad/keys in this cut)
-        tp1.classList.remove('disabled');
-        tp2.classList.toggle('disabled', players!==2);
+        togglePads();
 
         startOverlay.classList.remove('show');
         endOverlay.classList.remove('show');
@@ -539,16 +707,16 @@
         lastTs = 0;
         cancelAnimationFrame(rafId);
         rafId = requestAnimationFrame(loop);
-      }
+      };
 
-      // Wire buttons (in case inline attrs get stripped by a CMS)
+      // Wire buttons
       document.getElementById('startBtn').addEventListener('click', ()=>window.__doStart());
       pauseBtn.addEventListener('click', ()=>{
         if(state.over) return;
         if(state.running){
           state.running = false;
           cancelAnimationFrame(rafId);
-          startOverlay.classList.add('show'); // reuse as pause sheet
+          startOverlay.classList.add('show');
         }else{
           startOverlay.classList.remove('show');
           state.running = true;
@@ -574,6 +742,7 @@
       setAspectForScreen();
       renderLeaderboard();
       updateHud();
+      togglePads();
     })();
   </script>
 </body>
