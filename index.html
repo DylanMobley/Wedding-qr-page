@@ -71,7 +71,7 @@
     }
     .flex-row{ display:flex; justify-content:center; align-items:center; gap:.5rem; flex-wrap:wrap; }
     .game-head{ font-weight:700; margin:.35rem 0 .25rem; color:#6b4423; }
-    .game-sub{ font-size:var(--fs-small); color:var(--inkmuted); margin:.25rem 0 .35rem; }
+    .game-sub{ font-size:var(--fs-small); color:#6b4423; margin:.25rem 0 .35rem; }
     .hud{
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: var(--fs-hud); margin:.45rem 0; color:#444;
@@ -397,9 +397,6 @@
           // Keep existing entities inside bounds
           clampAllToBounds();
         }
-
-        // Maintain visual aspect by letting CSS scale canvas width to container
-        // Height auto-adjusts via intrinsic canvas pixel ratio.
       }
 
       // ---------- Audio ----------
@@ -416,7 +413,7 @@
       const sCollect=()=>beep(880,0.05,'square',0.05);
       const sPower=()=>beep(660,0.12,'sawtooth',0.04);
       const sHit=()=>beep(180,0.09,'square',0.05);
-      muteBtn.addEventListener('click',()=>{
+      muteBtn?.addEventListener('click',()=>{
         muted=!muted; muteBtn.textContent = muted ? '🔇 Sound Off' : '🔈 Sound On';
         muteBtn.setAttribute('aria-pressed', muted ? 'true':'false');
       });
@@ -538,7 +535,7 @@
         else if(kind==='margarita'){ ctx.fillStyle='#2b2b2b'; ctx.fillRect(x-3*s-1,y-1-1,6*s+2,1+2);
           ctx.fillRect(x-2*s-1,y-3*s-1,4*s+2,3*s+2); ctx.fillRect(x-1*s-1,y+1-1,2*s+2,3*s+2);
           ctx.fillRect(x-2*s-1,y+4-1,4*s+2,1+2); ctx.fillRect(x+3*s-1,y-3*s-1,2*s+2,2*s+2);
-          ctx.fillStyle='#e0e0e0'; ctx.fillRect(x-3*s,y-1,6*s,1); ctx.fillStyle:'#b2f7c2'; ctx.fillRect(x-2*s,y-3*s,4*s,3*s);
+          ctx.fillStyle='#e0e0e0'; ctx.fillRect(x-3*s,y-1,6*s,1); ctx.fillStyle = '#b2f7c2'; ctx.fillRect(x-2*s,y-3*s,4*s,3*s);
           ctx.fillStyle='#e0e0e0'; ctx.fillRect(x-1*s,y+1,2*s,3*s); ctx.fillStyle='#e0e0e0'; ctx.fillRect(x-2*s,y+4,4*s,1);
           ctx.fillStyle='#8ad64b'; ctx.fillRect(x+3*s,y-3*s,2*s,2*s); }
         else if(kind==='ring'){ ctx.fillStyle='#735a00'; ctx.fillRect(x-3*s-1,y-3*s-1,6*s+2,6*s+2);
