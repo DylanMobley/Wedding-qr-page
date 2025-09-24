@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Heart Quest — Tiny 8-bit Love Game</title>
+  <style>
+    body{font-family:sans-serif;margin:0;padding:0;background:#ffe5b4;color:#333;text-align:center}
+    header{background:#e75480;color:#fff;padding:0.5em}
+    .container{max-width:480px;margin:0 auto;padding:1em}
+    canvas{width:100%;max-width:480px;border:3px solid #333;background:#9fd8ff}
+    .hud{margin:.5em 0;font-size:.9em}
+    .buttons{display:flex;gap:.5em;justify-content:center;margin:.5em 0}
+    button{padding:.5em 1em;border-radius:8px;border:2px solid #333;background:#fff;font-weight:bold}
+    #endOverlay,#startOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,229,180,.95);
+      display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:10;transition:opacity .5s}
+    #endOverlay.hide,#startOverlay.hide{opacity:0;pointer-events:none}
+    #countdown{font-family:monospace;font-size:2em;margin:.5em;color:#e75480}
+    .lb-row{display:flex;justify-content:space-between;font-family:monospace}
+    a.back{display:inline-block;margin-top:1em;color:#3a8f5b;font-weight:bold}
+  </style>
+</head>
+<body>
+<header>
+  <h1>❤️ Heart Quest ❤️</h1>
+  <p>Tiny 8-bit Dreamscape Game</p>
+</header>
+
+<div class="container">
+  <div class="hud" id="hud"></div>
+  <canvas id="game" width="320" height="240"></canvas>
+  <div class="buttons">
+    <button id="startBtn">Start</button>
+    <button id="pauseBtn">Pause</button>
+    <button id="muteBtn">🔈 Sound On</button>
+  </div>
+  <h3>Hall of Fame</h3>
+  <div id="lbRows"></div>
+  <a class="back" href="/index.html">← Back to Main Page</a>
+</div>
+
+<div id="startOverlay">
+  <h2>Heart Quest</h2>
+  <p>Collect hearts, margaritas, rings, champagne — avoid crabs!<br>
+     Golden Heart = +5, Shield, Speed, Time +1s</p>
+  <button id="overlayStart">Play!</button>
+  <div id="countdown"></div>
+</div>
+
+<div id="endOverlay" class="hide">
+  <h2>Game Over</h2>
+  <p id="finalScores"></p>
+  <input id="initialsInput" maxlength="3" placeholder="Your initials"/>
+  <button id="saveScoreBtn">Save Score</button>
+</div>
+
+<script>
+/* === Game State === */
+const cvs=document.getElementById('game'),ctx=cvs.getContext('2d');
+const hud=document.getElementById('hud'),lbRows=document.getElementById('lbRows');
+const startOverlay=document.getElementById('startOverlay'),endOverlay=document.getElementById('endOverlay');
+const overlayStart=document.getElementById('overlayStart'),countdownEl=document.getElementById('countdown');
+const finalScores=document.getElementById('finalScores'),saveScoreBtn=document.getElementById('saveScoreBtn');
+const initialsInput=document.getElementById('initialsInput');
+
+let state={},players=1,difficulty=1,rafId,lastTs=0,muted=false;
+const W=cvs.width,H=cvs.height;
+
+/* === Keys === */
+const keys={};
+document.addEventListener('keydown',e=>keys[e.code]=true);
+document.addEventListener('keyup',e=>keys[e.code]=false);
+
+/* === Sprites (hearts, crabs, etc.) === */
+function drawSpriteCentered(cx,cy,sprite,scale=4){
+  const px=sprite.px,pal=sprite.pal;
+  for(let r=0;r<px.length;r++){
+    for(let c=0;c<px[r].length;c++){
+      const code=px[r][c];
+      if(code==='.') continue;
+      ctx.fillStyle=pal[code]||'#000';
+      ctx.fillRect(cx-(px[0].length*scale>>1)+c*scale,
+                   cy-(px.length*scale>>1)+r*scale,scale,scale);
+    }
+  }
+}
+const SPR={
+  heart:{pal:{r:'#ff5b8a',s:'#d13b67'},
+    px:["..rr..rr..",".rrrrrrrr.","rrrrrrrrrr","rrrrrrrrrr",".rrrrrrrr.","..rrrrrr..","...rrrr...","....rr....",".....s...."]},
+  heartGold:{pal:{r:'#ffd700',s:'#b59400'},
+    px:["..rr..rr..",".rrrrrrrr.","rrrrrrrrrr","rrrrrrrrrr",".rrrrrrrr.","..rrrrrr..","...rrrr...","....rr....",".....s...."]},
+  crab:{pal:{r:'#c0392b',d:'#8e2b21'},
+    px:["r....rr....",".r..rrrr..r","..rrrrrrrr.","..rrrrrrrr.",".rrrrrrrrrr","r.rrrrrrr.r","...r..r...."]},
+  p1:{pal:{a:'#4dff6d'},px:[".aaaa.",".aaaa.","aaaaaa",".aaaa.","..aa.."]}
+};
+
+/* === Init/Reset === */
+function reset(){
+  state={p1:{x:W/2,y:H-30,score:0,shield:0},crabs:[],items:[],time:30,best:0,tAccum:0,over:false};
+}
+reset();
+
+/* === Game Loop === */
+function update(dt){
+  state.tAccum+=dt;
+  if(state.tAccum>=1000){
+    state.tAccum-=1000;
+    if(!state.over){state.time--;if(state.time<=0) endGame();}
+  }
+  if(keys.ArrowLeft) state.p1.x-=2;
+  if(keys.ArrowRight) state.p1.x+=2;
+  state.p1.x=Math.max(10,Math.min(W-10,state.p1.x));
+
+  // collisions: crab hit
+  state.crabs.forEach(c=>{
+    c.x+=c.vx;
+    if(c.x<10||c.x>W-10) c.vx*=-1;
+    if(Math.abs(c.x-state.p1.x)<10 && Math.abs(c.y-state.p1.y)<10){
+      state.p1.score=Math.max(0,state.p1.score-1);
+    }
+  });
+}
+function draw(){
+  ctx.fillStyle='#9fd8ff';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#87c66b';ctx.fillRect(0,H-18,W,18);
+  drawSpriteCentered(state.p1.x,state.p1.y,SPR.p1,4);
+  state.crabs.forEach(c=>drawSpriteCentered(c.x,c.y,SPR.crab,3));
+  state.items.forEach(i=>drawSpriteCentered(i.x,i.y,i.type==='golden'?SPR.heartGold:SPR.heart,3));
+}
+function loop(ts){
+  const dt=ts-lastTs;lastTs=ts;
+  update(dt);draw();updateHud();
+  if(!state.over) rafId=requestAnimationFrame(loop);
+}
+function updateHud(){hud.textContent=`P1 Score:${state.p1.score} | Time:${state.time}s | Best:${state.best}`;}
+
+/* === Overlays & Flow === */
+overlayStart.onclick=()=>{countdown(3,()=>{startOverlay.classList.add('hide');startGame();});};
+document.getElementById('startBtn').onclick=()=>{startGame();};
+document.getElementById('pauseBtn').onclick=()=>{cancelAnimationFrame(rafId);};
+document.getElementById('muteBtn').onclick=()=>{muted=!muted;};
+
+/* Countdown */
+function countdown(n,cb){
+  if(n===0){countdownEl.textContent='';cb();return;}
+  countdownEl.textContent=n;
+  setTimeout(()=>countdown(n-1,cb),1000);
+}
+
+/* Start/End */
+function startGame(){reset();state.over=false;lastTs=0;rafId=requestAnimationFrame(loop);}
+function endGame(){
+  state.over=true;
+  cancelAnimationFrame(rafId);
+  state.best=Math.max(state.best,state.p1.score);
+  finalScores.textContent=`Final Score: ${state.p1.score}`;
+  endOverlay.classList.remove('hide');
+  setTimeout(()=>endOverlay.classList.add('hide'),2000);
+}
+
+/* Leaderboard */
+function renderLeaderboard(){
+  const board=JSON.parse(localStorage.getItem('hq_lb')||'[]');
+  lbRows.innerHTML=board.map((e,i)=>`<div class="lb-row"><span>${i+1}. ${e.i}</span><span>${e.s}</span></div>`).join('');
+}
+saveScoreBtn.onclick=()=>{
+  const board=JSON.parse(localStorage.getItem('hq_lb')||'[]');
+  board.push({i:initialsInput.value||'YOU',s:state.p1.score});
+  board.sort((a,b)=>b.s-a.s);board.splice(10);
+  localStorage.setItem('hq_lb',JSON.stringify(board));
+  renderLeaderboard();
+};
+renderLeaderboard();
+
+/* Music (simple oscillator dreamscape) */
+let actx=new (window.AudioContext||window.webkitAudioContext)();
+function playMusic(){
+  if(muted) return;
+  const o=actx.createOscillator(),g=actx.createGain();
+  o.type='sine';o.frequency.value=220+Math.random()*100;
+  g.gain.value=0.05;o.connect(g).connect(actx.destination);
+  o.start();o.stop(actx.currentTime+0.4);
+}
+setInterval(playMusic,1200);
+</script>
+</body>
+</html>
